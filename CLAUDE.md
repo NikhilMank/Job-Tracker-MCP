@@ -16,10 +16,10 @@ They do not call each other. Anything that links the two (matching rejection ema
 ```bash
 .venv/bin/python main.py                       # run jobtracker server (stdio; Ctrl-C to stop)
 .venv/bin/python gmail_mcp.py --auth           # one-time Gmail OAuth login (writes .gmail-token.json)
-.venv/bin/python .claude/skills/gmail-file-rejections/scripts/test_classifier.py   # only test suite; plain script, exits 1 on failure
+.venv/bin/python .claude/skills/gmail-file-rejections/scripts/test_classifier.py   # plain test script, exits 1 on failure (see README for all four)
 ```
 
-No linter, build step, or pytest config exists. `README.md` still shows a `uv run` MCP config — ignore it, it is outdated.
+No linter, build step, or pytest config exists.
 
 **Always launch with `.venv/bin/python`, never `uv run`** (it re-syncs to FastMCP 4.x and breaks the connection). FastMCP must stay pinned to `>=3.4.7,<4` because Claude Code speaks MCP protocol `2024-11-05`. A "tools fetch failed / Request timed out" error means a server failed to start — use the `gmail-mcp-troubleshooting` skill.
 
@@ -35,7 +35,9 @@ No linter, build step, or pytest config exists. `README.md` still shows a `uv ru
 - Gmail: label arguments accept names (case-insensitive, e.g. `JobApplications/Rejected`) and are resolved to IDs by `_resolve_label_ids`; system labels and raw IDs pass through. Changing `SCOPES` requires deleting `.gmail-token.json` and re-running `--auth`. Credentials (`gmail_credentials.json`, `.gmail-token.json`) are git-ignored; never print them.
 - `jobtracker.db` is git-ignored and irreplaceable. Back it up with `.venv/bin/python scripts/backup_db.py` before any write batch: it writes `backups/jobtracker-YYYY-MM-DD.db` (same-day runs overwrite, so one file per day) and deletes backups older than 30 days. Do not create ad-hoc `jobtracker.db.bak-*` files in the project root.
 
-## Scraper fallback (Firecrawl)
+## Scraper fallback (Firecrawl, optional)
+
+Only applies if you have a Firecrawl MCP connected; otherwise use `add_job_from_text` with pasted text.
 
 `add_job` is always the first attempt for a job URL. Firecrawl (`firecrawl_scrape`) may be used only after `add_job` failed or stored blank title/company, never first, so the failures show what to fix in our scraper. Firecrawl only reads; the job is still stored by our tools: if `add_job` stored a row with blanks, fill it with `update_job`; if `add_job` failed and stored nothing, call `add_job_from_text` with the clean URL and the text Firecrawl returned (only fields the page states, status as needed). Exception: robots.txt 403s (stepstone.de, linkedin.com) are not retried with Firecrawl; ask for pasted text. For every fallback, append one line to `data/scraper_failures.md`: `date | url | add_job error or blank fields | what Firecrawl returned | suspected fix`. Review that file when improving `JOB_SCHEMA` / `_scrape_job`.
 
@@ -43,6 +45,11 @@ No linter, build step, or pytest config exists. `README.md` still shows a `uv ru
 
 Jobs applied to are pasted into `data/todays_jobs.md`: links (one URL per line, optional `#tag`s) and, for Easy Apply jobs without a usable link, pasted descriptions (`### Company, Title`, optional URL line, text, `---`). On "update the db with today's jobs": run `scripts/backup_db.py` first; for each link call `add_job` then `update_job(status="applied")`; for each pasted description call `add_job_from_text(..., status="applied")` filling only fields the text states (no scraping, never invent missing ones); report added / duplicate / failed; then **clear `data/todays_jobs.md`**: delete everything under the template headings (links, pasted descriptions, and any `## Done` log) so the file is the empty template again for the next day. First check that every logged job id exists in the database; the database holds the full text, so do not keep raw copies or a Done list in the file. Put the added/duplicate/failed summary in the chat report instead. Strip page chrome from pastes (StepStone match widget with the user's CV name, LinkedIn "Application submitted" lines, recruiter/poster names). **Duplicates:** an exact URL/text match is rejected with the existing job's status and age. If it was added less than 1 day ago, treat it as an accidental double-paste and skip it; if older, it is a re-application, so retry with `allow_duplicate=true`. Never skip silently — list every duplicate and re-application in the report. A same-company/similar-title job with a different link is not blocked; just mention the earlier entry. `add_job_from_text` uses the given URL, or a `manual:<hash>` key (company+title+text) when none. **After the DB update, also file the application confirmation emails** (run the `gmail-job-inbox-triage` skill, or at least `gmail-file-applications`): receipts go to `JobApplications` (LinkedIn Easy Apply also `/EasyApply`), without waiting for another yes. Restart Claude Code after changing `main.py` so the server reloads.
 
+
+## Configuration (environment variables)
+- `JOBTRACKER_LABEL_PREFIX` (default `JobApplications`): parent Gmail label used by all skills.
+- `JOBTRACKER_USER_HINTS` (comma separated): substrings identifying your own address/name, so mail you sent is never classified.
+- `JOBTRACKER_SWEEP_NOISE`: optional regex for `inbox_sweep.py --hide-noise`.
 
 ## Where scripts go
 - Helper scripts written during a task go in `scripts/` (see `scripts/README.md`) — never in the project root.
