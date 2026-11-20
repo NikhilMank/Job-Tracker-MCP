@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# Local data: never commit
+*.db
+backups/
+data/*
+!data/todays_jobs.md
+.crawl4ai-cache/
+scripts/fixtures/
+
+# Secrets / environment
+.env
+.gmail-token.json
+gmail_credentials.json
+.gmail-auth-state.json
+
+# Per-user Claude Code files
+.claude/settings.local.json
+.claude/plans/

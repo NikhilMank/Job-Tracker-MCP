@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "jobtracker": {
+      "type": "stdio",
+      "command": ".venv/bin/python",
+      "args": ["main.py"]
+    },
+    "gmail": {
+      "type": "stdio",
+      "command": ".venv/bin/python",
+      "args": ["gmail_mcp.py"]
+    }
+  }
+}

@@ -1,0 +1,19 @@
+[project]
+name = "jobtracker-mcp"
+version = "0.1.0"
+description = "Job application tracker for Claude Code: MCP servers that scrape job postings into SQLite and manage Gmail"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "crawl4ai==0.9.4",
+    "fastmcp>=3.4.7,<4",
+]
+[project.optional-dependencies]
+gmail = [
+    "google-auth>=2.28.0",
+    "google-auth-oauthlib>=1.2.0",
+    "google-auth-httplib2>=0.2.0",
+    "google-api-python-client>=2.117.0",
+    "googleapis-common-protos>=1.68.0",
+]

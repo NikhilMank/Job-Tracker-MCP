@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "jobtracker": {
+      "command": "/ABSOLUTE/PATH/TO/jobtracker-mcp/.venv/bin/python",
+      "args": ["/ABSOLUTE/PATH/TO/jobtracker-mcp/main.py"]
+    },
+    "gmail": {
+      "command": "/ABSOLUTE/PATH/TO/jobtracker-mcp/.venv/bin/python",
+      "args": ["/ABSOLUTE/PATH/TO/jobtracker-mcp/gmail_mcp.py"]
+    }
+  }
+}

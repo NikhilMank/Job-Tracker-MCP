@@ -1,0 +1,9 @@
+aiosqlite>=0.22.1
+crawl4ai==0.9.4
+fastmcp>=3.4.7,<4
+# Gmail server (gmail_mcp.py) and the Gmail skills
+google-api-python-client>=2.117.0
+google-auth>=2.28.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
+googleapis-common-protos>=1.68.0
