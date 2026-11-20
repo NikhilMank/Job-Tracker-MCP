@@ -363,7 +363,7 @@ async def _get_stats() -> dict:
 
 _crawler = None
 _crawler_lock = asyncio.Lock()
-# 18 parallel add_job calls (the daily link batch) overloaded one browser and one of them hit the tool timeout (McKinsey, 2026-11-04): scrape at most 4 at a time
+# 18 parallel add_job calls (the daily link batch) overloaded one browser and one of them hit the tool timeout: scrape at most 4 at a time
 _scrape_sem = asyncio.Semaphore(4)
 
 
@@ -412,7 +412,7 @@ async def _scrape_job(url: str) -> dict:
             max_retries=1,
             verbose=False,
             exclude_all_images=True,
-            remove_consent_popups=True,    # McKinsey stored its cookie dialog as the description
+            remove_consent_popups=True,    # some sites store the cookie dialog as the description
             **kw,
         )
 
@@ -665,7 +665,7 @@ async def add_job(
         await _insert_job(job)
 
         # extraction problems the caller must report and log in data/scraper_failures.md. A job description is
-        # non-negotiable (user rule 2026-10-27): description problems lead the reply and set description_ok=false.
+        # non-negotiable: description problems lead the reply and set description_ok=false.
         warnings = raw.get("warnings") or []
         desc_problems = [w for w in warnings if w.lower().startswith("description")]
         other = [w for w in warnings if w not in desc_problems]

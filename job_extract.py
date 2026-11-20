@@ -207,7 +207,7 @@ _NOT_A_NAME = re.compile(r"\b(suchen|search|alle|all|filter|auswählen|select)\b
 
 
 def labelled_fields(markdown: str) -> dict:
-    """'**Unternehmen:** Atos' / '**Gesellschaft:** Porsche Consulting GmbH' / '**Einsatzort:** Stuttgart' lines.
+    """'**Unternehmen:** Initech' / '**Gesellschaft:** Globex Consulting GmbH' / '**Einsatzort:** Stuttgart' lines.
     These are the employer's own statement, so they beat the site footer / og:site_name."""
     out: dict = {}
     for key, labels in (("company", _COMPANY_LABELS), ("location", _LOCATION_LABELS)):
@@ -442,7 +442,7 @@ def strip_inline_chrome(md: str) -> str:
 
 
 def _cut_consent_dialog(md: str) -> str:
-    """A consent dialog the browser could not dismiss (McKinsey/Avature) lands after the posting: cut from its first 'cookie'
+    """A consent dialog the browser could not dismiss (seen on some career sites) lands after the posting: cut from its first 'cookie'
     line when that is in the last 40% of the text and the rest of the page is mostly cookie talk."""
     pos = 0
     for line in md.splitlines(keepends=True):
@@ -587,14 +587,14 @@ _PASTE_CHROME = re.compile(
 
 
 def is_cookie_page(text: str | None) -> bool:
-    """A consent dialog / cookie declaration, not a posting (emagine's Cookiebot page was stored as 7k chars of 'description')."""
+    """A consent dialog / cookie declaration, not a posting (a Cookiebot page was stored as 7k chars of 'description')."""
     t = text or ""
     n = len(re.findall(r"cookie", t, re.I))
     return n >= 6 and n * 1000 / max(1, len(t)) >= 2
 
 
 def description_problems(description: str | None, url: str = "", pasted: bool = False) -> list[str]:
-    """Everything wrong with a stored job description. A job description is non-negotiable (user rule 2026-10-27):
+    """Everything wrong with a stored job description. A job description is non-negotiable:
     every entry here must reach the user, so callers print them loudly and the daily routine reports each one."""
     d = (description or "").strip()
     n = len(d)
