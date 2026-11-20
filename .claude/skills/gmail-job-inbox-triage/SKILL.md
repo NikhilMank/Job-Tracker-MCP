@@ -18,7 +18,7 @@ A false positive hides a real email (interview invitation, offer, a request with
   receipts/"viewed"/"application updates"). Decide by **sender + subject**, never by sender alone.
 
 ## When it runs
-**Only when the user asks** ("clean my job mails"). No schedule, no background automation (the user chose this). Platform alerts and
+**Only when the user asks** ("clean my job mails"). No schedule, no background automation. Platform alerts and
 company letters keep arriving, so a cleanup only removes what exists at that moment: say so in the report, and mention how many
 new ones arrived since the last run (`mail_state.py show` gives the last-run time).
 
@@ -117,5 +117,5 @@ veto or protect pattern to gain recall. Helper scripts go in `scripts/`, never t
 ## Gotchas
 - **Silent drops.** `triage_one` returns `None` for mail with no job wording, so a company mail that matched no rule was invisible. Fixed with: `CONSENT_RETENTION` (consent / "we still store your data" mails -> `STALE_PROFILE`, trashed), `RESCHEDULE` (interview time change / cancellation -> `NEEDS_YOU`, also update `data/shortlisted.md`), `ACCOUNT_CREATED` and `APPLICATION_SURVEY` (-> `CONFIRM`, filed), talent newsletters added to `NOISE` and to the `talent newsletters` rule in `clean_job_suggestions.py`, and a final safety net: a career/recruiting sender with job wording that no rule matched is `UNCLASSIFIED`. Regression cases are in `test_triage.py`; run it after every rule change.
 - **Alert rules were too narrow:** Instaffo "Könnte gut zu dir passen / Neuer Job / wartet auf dich", Workwise "Jobs passen", Stepstone "Your progress ... new job matches" were kept as "not a job suggestion". Glassdoor mails were protected by the word `security` in the job title; `PROTECT` now only matches security alerts/codes.
-- **Mail can be missing from the triage download entirely** (the Continental "Einladung zum Online Assessment" of 5 Nov and the Porsche confirmation were not in `bodies.json`). The time filter and pending ids are not a guarantee. So the routine ends with an **inbox sweep** (see `daily-job-routine` step 5d): list the whole inbox from the last 21 days independent of the saved run time and account for every job-related mail.
+- **Mail can be missing from the triage download entirely** (the Vendor "Einladung zum Online Assessment" of 5 Nov and the Globex confirmation were not in `bodies.json`). The time filter and pending ids are not a guarantee. So the routine ends with an **inbox sweep** (see `daily-job-routine` step 5d): list the whole inbox from the last 21 days independent of the saved run time and account for every job-related mail.
 - Never decide "nothing left" from the triage output alone; the verification pass reads the same download.

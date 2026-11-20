@@ -1,6 +1,6 @@
 ---
 name: daily-job-routine
-description: The user's one-shot daily job routine - add today's applied jobs to jobtracker.db from data/todays_jobs.md, file the application confirmation emails into JobApplications, file rejection emails into JobApplications/Rejected and mark those jobs rejected, trash job-site alerts and company job letters (company letters that list a full-time AI role are kept and reported), and report mail that needs the user. Use when the user says "do my daily job update", "update today's jobs", "update the new jobs", "sort my inbox after updating the tracker" or asks for the whole routine.
+description: One-shot daily job routine - add today's applied jobs to jobtracker.db from data/todays_jobs.md, file the application confirmation emails into JobApplications, file rejection emails into JobApplications/Rejected and mark those jobs rejected, trash job-site alerts and company job letters (company letters that list a full-time AI role are kept and reported), and report mail that needs the user. Use when the user says "do my daily job update", "update today's jobs", "update the new jobs", "sort my inbox after updating the tracker" or asks for the whole routine.
 ---
 
 # Daily job routine
