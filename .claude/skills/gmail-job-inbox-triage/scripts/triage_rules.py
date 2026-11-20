@@ -5,7 +5,7 @@
     bucket, note = triage_one(email_dict, body)     # bucket is None for mail that is not about the user's job search
 
 Buckets: SHORTLISTED | NEEDS_YOU | REJECTION | CONFIRM_EASY | CONFIRM | DOUBTFUL | UNCLASSIFIED | STALE_PROFILE   (see triage_inbox.py)
-Design rule (learned the hard way on 2026-10-08): a job-related mail from a company must NEVER vanish without a trace.
+Design rule (learned the hard way): a job-related mail from a company must NEVER vanish without a trace.
 If no rule recognises it, it lands in UNCLASSIFIED and is listed for a human, not silently skipped.
 """
 import os, re, sys
@@ -48,8 +48,8 @@ PLATFORM_NOISE = re.compile(r"(linkedin\.com|stepstone|glassdoor|xing\.com|indee
 SHORTLIST_POS = re.compile(r"(in (die|der) (engere[nr]?|engste[nr]?) (auswahl|wahl)( gekommen| gezogen| aufgenommen| genommen)?|you(['’]ve| have) been shortlisted|you are shortlisted|"
                            r"(profil|bewerbung) hat uns (überzeugt|gefallen|beeindruckt)|(möchten|würden) (wir )?(sie|dich|euch) (gerne )?(persönlich )?kennenlernen|"
                            r"next (stage|round|step) (of|in) (the|our) (process|interview)|nächste(n)? (runde|phase|stufe) )", re.I)
-# Automated process steps (user, 2026-11-05: anything that needs an action from the user gets NeedsAttention and stays in the inbox; replaces the
-# 2026-10-08 "label only" rule): online assessments, aptitude /
+# Automated process steps (anything that needs an action from the user gets NeedsAttention and stays in the inbox; replaces the
+# "label only" rule): online assessments, aptitude /
 # personality tests, questionnaires, coding-challenge platforms. They are sent to EVERY applicant, usually by a vendor (ELIGO, cut-e, Harver, Codility,
 # HackerRank, TestGorilla, ...) with a username/link and a deadline. They are NOT a positive reply: no star, no Shortlisted label, but they are NEEDS_YOU
 # (NeedsAttention label, inbox). The report mentions the deadline. A human interview invitation or a document/salary request still wins.
@@ -80,7 +80,7 @@ def is_stale_profile_warning(frm, subj, own):
 
 
 # Consent / data-retention requests ("keep my data?", "we still store your data", "request for consent"): no application is involved, the user
-# trashes them (2026-11-14: Cherry, Grafton, PAJ, Precis were left in the inbox). Matched on subject + the first 300 chars only, so static
+# trashes them . Matched on subject + the first 300 chars only, so static
 # retention sentences deep inside receipts and rejections never trigger it.
 CONSENT_RETENTION = re.compile(r"(einverständnis\w*|request for consent|data retention|retention policy|(daten|data) (sind |is |are )?(noch |still )?(gespeichert|stored)|"
                                r"keep (considering you|your information|your data)|extend permission|weiter(hin)? .{0,20}(bewerber)?pool|talent (pool|community) .{0,30}(erhalten|stay))", re.I)
@@ -88,7 +88,7 @@ CONSENT_RETENTION = re.compile(r"(einverständnis\w*|request for consent|data re
 # and the notes in data/shortlisted.md need the new time (a changed interview time must not go unreported).
 RESCHEDULE = re.compile(r"((gespräch|interview|termin|kennenlern\w*).{0,60}(neue uhrzeit|neuer termin|verschoben|verlegt|abgesagt|rescheduled|cancel+ed)|"
                         r"(neue uhrzeit|abgesagtes ereignis|canceled event|cancelled event|updated invitation|rescheduling (your|the) interview|reschedul\w+ .{0,30}interview))", re.I)
-# Accounts the portal created for the user and application-feedback surveys: receipts, file them (2026-11-14: HOERBIGER, Etteplan).
+# Accounts the portal created for the user and application-feedback surveys: receipts, file them .
 ACCOUNT_CREATED = re.compile(r"(profil auf unserer karriereseite erstellt|konto auf der .{0,40}karriereseite (wurde )?erstellt|(your|ihr|dein) (candidate )?(account|profile|profil) (has been|was|wurde) (created|erstellt)|"
                              r"successfully created (a|your) (candidate )?(profile|account))", re.I)
 APPLICATION_SURVEY = re.compile(r"(feedback on our application process|anonymous feedback|candidate (experience )?survey|umfrage zu (deiner|ihrer) bewerbung|feedback zum bewerbungsprozess|"
@@ -135,7 +135,7 @@ def triage_one(e, body):
     # NEEDS_YOU wins over everything else: never hide mail that wants something from the user. Marketing sender exempt.
     if act and rej["verdict"] != "REJECTION" and con["verdict"] != "CONFIRMATION":
         return "NEEDS_YOU", f"asks you to act ({act.group(0)[:30]!r})"
-    # "confirm your application or it is deleted" is a to-do for the user, not a rejection (2026-10-20, Porsche)
+    # "confirm your application or it is deleted" is a to-do for the user, not a rejection
     if about_me and CONFIRM_BUTTON.search(subj + " " + own[:3000]) and not NEGATION_DECISION.search(own[:3000]):
         return "NEEDS_YOU", "application incomplete until you confirm it (confirm link)"
     if rej["verdict"] == "REJECTION":
@@ -151,5 +151,5 @@ def triage_one(e, body):
         # job-related, from a company / ATS, and no rule knows it: never leave it invisible
         return "UNCLASSIFIED", "no pattern matched -- read it (receipt? rejection? request?)"
     if CAREER_SENDER.search(frm) and JOBISH.search(subj + " " + body[:1500]) and not PLATFORM_NOISE.search(low) and not NOISE.search(low) and not MARKETING.search(own[:2500]):
-        return "UNCLASSIFIED", "career/recruiting sender, no rule matched -- read it (added 2026-11-14 so nothing from a company is silent)"
+        return "UNCLASSIFIED", "career/recruiting sender, no rule matched -- read it"
     return None, ""

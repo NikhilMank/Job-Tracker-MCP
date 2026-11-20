@@ -46,7 +46,7 @@ check("job-code line is not a location", heading_location("# AI Solution Enginee
 check("glued location label", merge_job_fields({"title": "T", "location": "LocationDortmund"}, {}, "# T\n" + "x " * 200)["location"], "Dortmund")
 check("cookie manager cut", trim_chrome("# Job\n" + "text " * 80 + "\n## Manager für Cookie-Einwilligungen\nfoo").endswith("text"), True)
 
-# --- helpers added 2026-10-21 (tectake / Zurich / KB Marketing / Birds on Mars failures) ---
+# --- (tectake / Zurich / KB Marketing / Birds on Mars failures) ---
 check("entities decoded", fields_from_metadata({"og:title": "Junior Specialist Automation &amp; AI (m/w/d)"})["title"], "Junior Specialist Automation & AI (m/w/d)")
 check("career prefix", (job_extract._clean_company("Jobs@Birds on Mars"), job_extract._clean_company("Karriere bei Acme GmbH"), job_extract._clean_company("Jobs bei")), ("Birds on Mars", "Acme GmbH", ""))
 check("domain is not a company", job_extract._clean_company("karriere-kbmarketing.de"), "")

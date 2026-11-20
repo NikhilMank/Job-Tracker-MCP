@@ -59,7 +59,7 @@ DECISION = [
     r"(können|koennen) wir (aktuell|derzeit|momentan|zurzeit|zur zeit|leider|im moment)?\s*(nicht|keine?)\s*(weiter ?planen|weiter ?machen|weiter ?verfolgen)|nicht weiter ?planen",
     r"täglich treffen wir viele entscheidungen|leichtfallen.{0,60}(absage|leider)",
     r"(teilen|teile) wir (dir|ihnen|euch) (heute )?mit, dass.{0,80}(nicht|kein|andere|leider)",
-    # --- added 2026-10-08 after measuring recall on 500 filed rejections -------------------
+    # --- after measuring recall on 500 filed rejections -------------------
     r"\bnicht\b.{0,60}\bfortfahren\b",                                                    # nicht mit deiner Bewerbung / im Bewerbungsprozess fortfahren
     r"nicht für (deine|ihre|eure?) bewerbung (\w+ )?entschieden|bewerbung (leider )?keinen erfolg|nicht in betracht ziehen|nicht weiterverfolgen",
     r"\b(position|stelle|arbeitsplatz)\b.{0,100}\bnicht anbieten (können|zu können)|\bkeine?n? (position|stelle|arbeitsplatz)\b.{0,60}\banbieten|keine position .{0,40}vakant",

@@ -59,7 +59,7 @@ elif os.path.exists(f"{args.out}/emails.json"):
 emails = json.load(open(f"{args.out}/emails.json"))
 bodies = json.load(open(f"{args.out}/bodies.json"))
 emails = [e for e in emails if "INBOX" in e.get("labels", ["INBOX"])]   # drops pending ids that have since been filed/deleted
-# mails the user marked with the label JobApplications/Attended are handled: do not remind about them again (user rule, 2026-10-21)
+# mails the user marked with the label JobApplications/Attended are handled: do not remind about them again
 from google.auth.transport.requests import Request  # noqa: E402
 from google.oauth2.credentials import Credentials  # noqa: E402
 from googleapiclient.discovery import build  # noqa: E402

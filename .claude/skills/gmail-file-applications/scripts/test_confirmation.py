@@ -14,7 +14,7 @@ OK = [
     ("We appreciate your interest in our Organisation and acknowledge receipt of your application for the position of Junior Systems Engineer.", ""),
     ("Dear Alex, Thank you for applying to the Machine Learning Engineer position. We have received your application and will be in touch within 14 days.", ""),
     ("Hallo Alex, vielen Dank für deine Bewerbung. Wir haben deine Bewerbung erhalten und melden uns bei dir.", ""),
-    # --- receipts that used to be invisible to the triage (2026-10-08) ---
+    # --- receipts that used to be invisible to the triage ---
     ("Hallo Alex, wir freuen uns über dein Interesse an einer Tätigkeit bei Hooli und bedanken uns für deine Bewerbung. Bitte hab Verständnis dafür, dass wir für eine Rückmeldung noch etwas Zeit benötigen.", ""),
     ("Sehr geehrter Herr Example, wir bedanken uns sehr für Ihre Bewerbung und dem damit entgegengebrachten Interesse für unser Unternehmen. Bitte haben Sie Verständnis dafür, dass wir für eine Rückmeldung noch etwas Zeit benötigen.", ""),
     ("Dear Alex, Thanks a lot for your application and your interest shown in our company. As the careful analysis needs some time, we would like to ask for some patience.", ""),
