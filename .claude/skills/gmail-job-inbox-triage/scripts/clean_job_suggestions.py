@@ -64,7 +64,7 @@ ap.add_argument("--apply", action="store_true")
 ap.add_argument("--undo")
 ap.add_argument("--max", type=int, default=3000)
 ap.add_argument("--no-fetch", action="store_true")
-ap.add_argument("--report-ai", action="store_true", help="read the bodies and list the full-time AI roles seen in suggestions, but still trash them (user: \"I won't open the platform alerts anyway\")")
+ap.add_argument("--report-ai", action="store_true", help="read the bodies and list the full-time AI roles seen in suggestions before they are trashed (use only if the user wants roles listed)")
 ap.add_argument("--hold-ai", action="store_true", help="read the mail bodies and do NOT trash suggestions that list a full-time AI role; list them in the report instead (daily-job-routine skill)")
 args = ap.parse_args()
 
