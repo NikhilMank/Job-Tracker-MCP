@@ -21,3 +21,6 @@ gmail_credentials.json
 # Per-user Claude Code files
 .claude/settings.local.json
 .claude/plans/
+
+# Never commit archives
+*.zip
