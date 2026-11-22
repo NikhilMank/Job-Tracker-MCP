@@ -47,6 +47,14 @@ check("gmail: undecided with files runs", sc.want_gmail(False, False, None, True
 check("--gmail forces over a no", sc.want_gmail(True, False, False, False)[0], True)
 check("--no-gmail wins", sc.want_gmail(True, True, True, True)[0], False)
 
+T = "- gmail_enabled: (not set)\n- job_alerts: (not set) <!-- x -->\n- file_receipts: (not set)\n- new_key: (not set)\n"
+check("all answered", sc.unanswered_preferences(T, "- gmail_enabled: yes\n- job_alerts: leave\n- file_receipts: no\n- new_key: yes\n"), [])
+check("new template key = new question", sc.unanswered_preferences(T, "- gmail_enabled: yes\n- job_alerts: leave\n- file_receipts: no\n"), ["new_key"])
+check("(not set) is unanswered", sc.unanswered_preferences(T, "- gmail_enabled: yes\n- job_alerts: (not set)\n- file_receipts: no\n- new_key: no\n"), ["job_alerts"])
+check("gmail off ignores mail keys", sc.unanswered_preferences(T, "- gmail_enabled: no\n"), [])
+check("gmail undecided lists the unanswered rest", sc.unanswered_preferences(T, "- job_alerts: leave\n"), ["gmail_enabled", "file_receipts", "new_key"])
+check("existing answers never listed", sc.preference_keys("- a: yes <!-- c -->\n## h\n- b: \n")["a"], "yes")
+
 class _Req:
     def __init__(s, log, body): s.log, s.body = log, body
     def execute(s): s.log.append(s.body["name"]); return {}

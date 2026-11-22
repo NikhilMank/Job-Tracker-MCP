@@ -58,6 +58,29 @@ def wanted_label_keys(text):
     return [k for k in LABEL_SUFFIX if answers.get(k)]
 
 
+PREFS_PATH = os.path.join("data", "routine-preferences.md")
+PREFS_TEMPLATE = os.path.join(".claude", "skills", "daily-job-routine", "routine-preferences.template.md")
+
+
+def preference_keys(text):
+    """{key: value} for every `- key: value` line (comments after <!-- stripped). Value '' when empty."""
+    out = {}
+    for line in (text or "").splitlines():
+        line = line.split("<!--")[0].strip()
+        if line.startswith("- ") and ":" in line:
+            k, v = line[2:].split(":", 1)
+            out[k.strip()] = v.strip()
+    return out
+
+
+def unanswered_preferences(template_text, prefs_text):
+    """Keys the template has that the user's file lacks or leaves '(not set)'. After an update this lists the NEW questions.
+    Mail-related keys are ignored when the user turned Gmail off."""
+    tmpl, mine = preference_keys(template_text), preference_keys(prefs_text)
+    gmail_off = preference(prefs_text, "gmail_enabled") is False
+    return [k for k in tmpl if (k not in mine or mine[k] in ("", "(not set)")) and not (gmail_off and k != "gmail_enabled")]
+
+
 def want_gmail(flag_gmail, flag_no_gmail, preference, files_exist):
     """Decide whether the Gmail checks run. Returns (run, reason)."""
     if flag_no_gmail:
@@ -213,9 +236,18 @@ def main():
     print(f"JobTracker setup check ({'APPLY' if a.apply else 'dry run'}), label prefix '{a.prefix}'\n")
     check_environment(a.apply)
     try:
-        prefs_text = open(os.path.join(ROOT, "data", "routine-preferences.md")).read()
+        prefs_text = open(os.path.join(ROOT, PREFS_PATH)).read()
     except OSError:
-        prefs_text = ""
+        prefs_text = None
+    if prefs_text is None:
+        report("INFO", "preferences", "not saved yet; the first-time-setup skill asks and saves them")
+    else:
+        try:
+            todo = unanswered_preferences(open(os.path.join(ROOT, PREFS_TEMPLATE)).read(), prefs_text)
+            report("OK" if not todo else "TODO", "preferences answered", "" if not todo else "not answered yet: " + ", ".join(todo) + " (say \"check my setup\" and I ask only these)")
+        except OSError:
+            pass
+    prefs_text = prefs_text or ""
     pref = gmail_enabled_from_preferences(prefs_text)
     files = os.path.exists(os.path.join(ROOT, ".gmail-token.json")) or os.path.exists(os.path.join(ROOT, "gmail_credentials.json"))
     run, why = want_gmail(a.gmail, a.no_gmail, pref, files)
