@@ -67,6 +67,35 @@ search_jobs("python remote")
 
 Paste the jobs you applied to into `data/todays_jobs.md` (links, or pasted descriptions for Easy Apply jobs) and tell Claude *"update the db with today's jobs"*. The `daily-job-routine` skill adds them, files the confirmation emails and handles rejections.
 
+## Getting started
+
+A typical job hunt from zero to offer:
+
+1. **Profile**: tell Claude *"set up my profile"* (`profile-setup`) or *"build my profile from my resume"* (`profile-from-resume`). It writes `data/profile.md` (and optionally `data/cv.md`), both git-ignored and never leaving your machine.
+2. **Collect jobs**: paste links, or descriptions for sites that block scraping, with `add_job` / `add_job_from_text`.
+3. **Score**: *"which jobs should I apply to?"* (`job-fit-scorer`) ranks your `new` jobs against the profile as apply / maybe / skip.
+4. **Apply**: *"tailor my CV for job X"* (`cv-tailor`) and *"write a cover letter"* (`cover-letter-writer`). Both only reword what your CV really says and list gaps instead of inventing experience.
+5. **Track**: set the status with `update_job`. Moving a job to `applied` records `Applied: M/D/YYYY` in its notes; the review and follow-up skills rely on that line.
+6. **Follow up**: *"weekly review"* (`weekly-review`) shows the funnel, stale applications and next actions; *"follow up on my applications"* (`followup-outreach`) drafts polite messages. Nothing is ever sent without you saying so.
+7. **Interview**: *"prepare me for my interview"* (`interview-prep`) builds a question list and STAR stories from your real experience, and can run a mock interview.
+
+## Skills
+
+### Job-search skills (work without Gmail)
+
+| Skill | Purpose |
+|---|---|
+| `profile-setup` | interview you and create `data/profile.md` |
+| `profile-from-resume` | build the profile from a resume, asking only about the gaps |
+| `job-fit-scorer` | score saved jobs 0-100 against your profile, with reasons and the biggest gap |
+| `weekly-review` | read-only funnel report, stale applications, 3-5 next actions |
+| `cv-tailor` | match table, gap report and a tailored CV draft with a before/after change log |
+| `cover-letter-writer` | cover letter plus a short variant, using only facts from your CV |
+| `interview-prep` | likely questions, STAR stories, questions to ask, mock interview |
+| `followup-outreach` | find applications with no reply and draft follow-ups, referral asks, thank-yous |
+
+They read your private `data/profile.md` and `data/cv.md` and never invent experience. They draft only; nothing is sent, posted or saved to the tracker without your approval. Legal, tax and negotiation content is drafting help, not advice.
+
 ## Gmail skills and labels
 
 The skills file mail into labels under one parent label, **`JobApplications`** by default:
@@ -99,6 +128,7 @@ Plain scripts, no pytest; each exits 1 on failure:
 
 ```bash
 .venv/bin/python scripts/test_job_extract.py
+.venv/bin/python scripts/test_applied_date.py
 .venv/bin/python .claude/skills/gmail-file-rejections/scripts/test_classifier.py
 .venv/bin/python .claude/skills/gmail-file-applications/scripts/test_confirmation.py
 .venv/bin/python .claude/skills/gmail-job-inbox-triage/scripts/test_triage.py
@@ -106,7 +136,7 @@ Plain scripts, no pytest; each exits 1 on failure:
 
 ## Privacy
 
-`jobtracker.db`, `backups/`, `data/` (except the empty template), the Gmail token and credentials are git-ignored. Check `git status` before every commit.
+`jobtracker.db`, `backups/`, `data/` (except the empty template; this includes your `data/profile.md`, `data/cv.md` and every draft the skills save), the Gmail token and credentials are git-ignored. Check `git status` before every commit.
 
 ## License
 
