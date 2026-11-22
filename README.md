@@ -230,6 +230,8 @@ Create these labels in Gmail first. To use another prefix set `JOBTRACKER_LABEL_
 | `jobtracker-csv-import` | bulk-import a spreadsheet export |
 | `gmail-mcp-troubleshooting` | fix startup, OAuth and quota problems |
 
+**Nothing is deleted or moved by default.** The first time you run the daily routine, Claude asks what to do with each kind of mail (job-board alerts, employer job letters, "keep my data" mails, receipts, rejections) and saves your answers in `data/routine-preferences.md` (git-ignored). Say *"change my routine preferences"* to edit them. Trash always means Gmail's Trash with an undo log, never a permanent delete.
+
 Scripts that change anything (database, Gmail labels) default to a dry run and need `--apply`. The classifiers favour precision: when unsure, a mail stays in the inbox. Their sender and phrase lists are tuned for English and German mail. Edit the rules in `.claude/skills/gmail-job-inbox-triage/scripts/triage_rules.py` for your own market.
 
 ## Tests
