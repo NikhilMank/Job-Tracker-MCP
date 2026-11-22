@@ -182,8 +182,24 @@ async def db():
         _db_initialized = True
     conn = await aiosqlite.connect(DB_PATH)
     conn.row_factory = aiosqlite.Row
-    yield conn
-    await conn.close()
+    try:
+        yield conn
+    finally:
+        await conn.close()  # also on errors, otherwise the worker thread keeps the process alive
+
+
+def _with_applied_date(notes: str | None) -> str:
+    """Append an 'Applied: M/D/YYYY' line (today) unless the notes already carry one.
+
+    The job-search skills (weekly-review, followup-outreach, jobtracker-gmail-sync) read the applied
+    date from this line because the table has no applied-at column. Same format as the CSV import.
+    """
+    notes = notes or ""
+    if re.search(r"^Applied: \d+/\d+/\d+", notes, re.M):
+        return notes
+    today = datetime.now()
+    line = f"Applied: {today.month}/{today.day}/{today.year}"
+    return f"{notes.rstrip()}\n{line}" if notes.strip() else line
 
 
 async def _insert_job(job: dict) -> None:
@@ -217,7 +233,7 @@ async def _insert_job(job: dict) -> None:
                 job.get("posted_date"),
                 job.get("scraped_at"),
                 job.get("status", "new"),
-                job.get("notes"),
+                _with_applied_date(job.get("notes")) if job.get("status") == "applied" else job.get("notes"),
                 job.get("tags"),
             ),
         )
@@ -269,6 +285,14 @@ async def _update_job_in_db(
     description: str | None = None,
 ) -> dict | None:
     """Update job fields."""
+    if status == "applied":
+        # First time the job becomes 'applied': record the date in notes (see _with_applied_date).
+        current = await _get_job_by_id(job_id)
+        if current is not None and current["status"] != "applied":
+            base = notes if notes is not None else current.get("notes")
+            stamped = _with_applied_date(base)
+            if stamped != (base or ""):
+                notes = stamped
     async with db() as conn:
         fields = []
         params = []
