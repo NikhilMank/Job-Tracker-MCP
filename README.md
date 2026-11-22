@@ -157,6 +157,35 @@ Good to know:
 
 The `gmail-mcp-troubleshooting` skill covers these and more: ask Claude *"my gmail server fails"*.
 
+### Updating to the latest version
+
+Your own data is safe: `jobtracker.db`, `backups/`, everything in `data/` (profile, CV, saved preferences, daily file), your Gmail
+credentials and token, and `.claude/settings.local.json` are **git-ignored**, so updating never overwrites them. Only tracked files
+(code, skills, docs) change. Keep your personal settings in those ignored files rather than editing tracked ones.
+
+**Easiest: ask Claude.** Start Claude Code in the repo folder and say *"update the project to the latest version"*. The `update-jobtracker`
+skill backs up your database, shows what is new, asks before pulling, keeps any local edits, reinstalls dependencies if needed, runs the
+checks, and asks you **only the new preference questions**, never the ones you already answered. It never discards anything.
+
+**By hand:**
+
+```bash
+cd Job-Tracker-MCP
+source .venv/bin/activate
+python scripts/backup_db.py             # safety copy of your jobs (keeps one per day)
+git status                              # only "untracked/ignored" files? then you are clean
+git pull --ff-only                      # fetch and apply the latest version
+pip install -r requirements.txt         # only if requirements.txt changed
+python scripts/setup_check.py           # health check; also lists any new, unanswered preference questions
+```
+
+Then restart Claude Code (or run `/mcp`) so the servers load the new code, and say *"check my setup"* to answer any new preference questions.
+
+- **You edited tracked files** (for example `triage_rules.py`)? `git pull` may refuse. Run `git stash`, then `git pull --ff-only`, then `git stash pop`, and fix any conflict it reports (Claude can help). Do **not** use `git reset --hard`, `git checkout .` or `git clean`: those throw your edits away.
+- **You downloaded a ZIP** instead of cloning? Updating needs git. Clone the repo into a new folder, then copy `jobtracker.db`, `backups/`, `data/`, `gmail_credentials.json`, `.gmail-token.json` and `.claude/settings.local.json` from the old folder into the new one.
+- **You forked the repo?** Add this repository once as `upstream` (`git remote add upstream https://github.com/NikhilMank/Job-Tracker-MCP.git`), then `git fetch upstream` and `git merge upstream/main`.
+- **Something broke after updating?** Your database copy is in `backups/`; to go back to the previous version find its hash with `git reflog` and ask Claude to help you return to it safely.
+
 ## Usage
 
 Ask Claude in plain language, or call the tools directly:
@@ -175,7 +204,7 @@ search_jobs("python remote")
 
 ### Daily workflow
 
-Paste the jobs you applied to into `data/todays_jobs.md` (links, or pasted descriptions for Easy Apply jobs) and tell Claude *"update the db with today's jobs"*. The `daily-job-routine` skill adds them, files the confirmation emails and handles rejections.
+Paste the jobs you applied to into `data/todays_jobs.md` (created from `data/todays_jobs.template.md` on first use, and git-ignored; links, or pasted descriptions for Easy Apply jobs) and tell Claude *"update the db with today's jobs"*. The `daily-job-routine` skill adds them, files the confirmation emails and handles rejections.
 
 ## Getting started
 
@@ -224,6 +253,7 @@ The `first-time-setup` skill creates the labels you choose (or run `python scrip
 
 | Skill | Purpose |
 |---|---|
+| `update-jobtracker` | update to the latest version without losing your data, settings or local edits; asks only the new preference questions |
 | `first-time-setup` | verify the install and Gmail, create missing labels, ask and save your preferences (re-runnable health check) |
 | `daily-job-routine` | one-shot: add today's jobs, file receipts and rejections, delete job alerts, report what needs you |
 | `gmail-job-inbox-triage` | classify the inbox (needs-you, rejection, confirmation, alert) and file the clear cases |
@@ -252,7 +282,7 @@ Plain scripts, no pytest; each exits 1 on failure:
 
 ## Privacy
 
-`jobtracker.db`, `backups/`, `data/` (except the empty template; this includes your `data/profile.md`, `data/cv.md` and every draft the skills save), the Gmail token and credentials are git-ignored. Check `git status` before every commit.
+`jobtracker.db`, `backups/`, `data/` (except the template files; this includes your `data/profile.md`, `data/cv.md` and every draft the skills save), the Gmail token and credentials are git-ignored. Check `git status` before every commit.
 
 ## License
 
