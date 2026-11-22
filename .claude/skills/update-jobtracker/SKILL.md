@@ -37,8 +37,12 @@ Personal settings therefore belong in the ignored files (`data/...`, `.claude/se
      show the conflicted files and resolve them **with the user**: keep their edit and the new upstream change where both make sense.
      The stash stays available until the pop succeeds; never drop it.
    - `--ff-only` refuses when the local history diverged: explain, and only then offer `git pull --rebase` after the user agrees.
-   - If git complains about `data/todays_jobs.md` (older clones tracked it, it is private now): copy it aside first, update, then copy it
-     back to `data/todays_jobs.md`; it is git-ignored from then on.
+   - **One-time migration for older clones.** If `git ls-files data/todays_jobs.md` prints the file (earlier versions tracked it; it is
+     private and git-ignored now), a plain pull or stash mixes the user's pasted jobs into the new template or aborts. Do exactly this
+     (tested): `cp data/todays_jobs.md data/todays_jobs.keep`, check `cmp data/todays_jobs.md data/todays_jobs.keep` succeeds, then
+     `git checkout -- data/todays_jobs.md` (the **only** checkout allowed, and only after the `cmp` passed), `git stash push` for any other
+     local edits, `git pull --ff-only`, `git stash pop`, and finally `mv data/todays_jobs.keep data/todays_jobs.md`. From then on the file
+     is ignored and normal updates need nothing special. Afterwards confirm `git diff -- data/todays_jobs.template.md` is empty.
 6. **After the update.**
    - If dependencies changed: `.venv/bin/pip install -r requirements.txt`.
    - Run `.venv/bin/python scripts/setup_check.py` and the project's test scripts (see README, Tests); report failures honestly.
