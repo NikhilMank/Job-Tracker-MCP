@@ -1,11 +1,11 @@
 ---
 name: daily-job-routine
-description: One-shot daily job routine - add today's applied jobs to jobtracker.db from data/todays_jobs.md, file the application confirmation emails into JobApplications, file rejection emails into JobApplications/Rejected and mark those jobs rejected, trash job-site alerts and company job letters (company letters that list a full-time AI role are kept and reported), and report mail that needs the user. Use when the user says "do my daily job update", "update today's jobs", "update the new jobs", "sort my inbox after updating the tracker" or asks for the whole routine.
+description: One-shot daily job routine - add today's applied jobs to jobtracker.db from data/todays_jobs.md, file the application confirmation emails into JobApplications, file rejection emails into JobApplications/Rejected and mark those jobs rejected, handle job-site alerts, company job letters and other job mail exactly as the user's saved preferences say (asked once on the first run: nothing is deleted or moved by default), and report mail that needs the user. Use when the user says "do my daily job update", "update today's jobs", "update the new jobs", "sort my inbox after updating the tracker" or asks for the whole routine.
 ---
 
 # Daily job routine
 
-Runs four jobs in one pass. It reuses the existing skills; this file only fixes the order, the permissions and the report.
+Runs the jobs below in one pass. It reuses the existing skills; this file only fixes the order, the permissions and the report.
 Nothing here runs on a schedule - only when the user asks.
 
 | # | Job | Reused from |
@@ -13,14 +13,33 @@ Nothing here runs on a schedule - only when the user asks.
 | 1 | Add today's applied jobs to the DB | project `CLAUDE.md` -> "Daily workflow" |
 | 2 | File confirmation emails -> `JobApplications` | `gmail-job-inbox-triage` (C, E), `gmail-file-applications` |
 | 3 | File rejections -> `JobApplications/Rejected`, mark the jobs `rejected` | `gmail-file-rejections`, `jobtracker-gmail-sync` |
-| 4 | Trash job-site alerts and company letters without an AI role; report company-letter AI roles only | `gmail-job-inbox-triage` (A, B) + `--report-ai` / `--trash-no-ai` |
+| 4 | Handle job-site alerts and company letters **as the user's preferences say** (leave / trash / report) | `gmail-job-inbox-triage` (A, B), section 4 below |
 | 4b | Update the notes on ongoing interviews (`data/shortlisted.md` (optional, your own interview notes; skip this step if the file does not exist)) every run | step 5a3 |
 | 5 | Tell the user what needs them | report below |
 
 Principle (from `gmail-job-inbox-triage`): **precision over recall.** Hiding a real mail is worse than leaving a receipt in the
 inbox. Settle doubtful mail yourself by reading it; never hand the user a verification list. Everything "deleted" is Trash with an
-undo log, never permanent. Run from the project root with `.venv/bin/python`; scratch files go in the session scratchpad, helper
+undo log, never permanent. **Deleting, trashing or moving mail is the user's choice, never a default: it happens only if their saved
+preferences (section 0a) say so.** Run from the project root with `.venv/bin/python`; scratch files go in the session scratchpad, helper
 scripts in `scripts/`.
+
+## 0a. Routine preferences (ask once, then follow them)
+Different people want different things done with their mail, so this skill never decides that for them. The choices live in
+`data/routine-preferences.md` (git-ignored; template: `.claude/skills/daily-job-routine/routine-preferences.template.md`).
+- **File missing (first run), or the user says "change my routine preferences":** ask the questions below, 2-3 at a time, with their
+  options and what each does. Recommend the safe option (`leave` / `no`) but never choose for them and never infer an answer from
+  earlier runs, from other users or from how the mail looks. Write the file with the template's headings, print it back and
+  confirm. Until it exists, run **no** step that trashes or moves mail (steps that only add jobs to the tracker, read mail, add
+  labels/stars, or report may run).
+- **File exists:** read it, restate it in one line at the top of the report, and follow it exactly. A setting that is `(not set)` or
+  missing means: leave that kind of mail alone and ask the user now.
+- Questions: (1) job-board alerts and suggestions: leave or trash, and if trash, list the roles seen first? (2) company job-agent
+  letters: leave, ask each run, trash all, or trash unless they list a matching role? (3) "profile will be deleted / keep my data?"
+  mails: leave or trash? (4) "application viewed" / "selection is delayed" notices: leave or trash? (5) move application
+  confirmations out of the inbox into a receipts label? (6) move rejections into the Rejected label, and mark the job `rejected` in the
+  tracker automatically or ask first?
+- "Trash" always means Gmail Trash with an undo log; never offer or perform a permanent delete.
+- Labels-only actions that never remove mail from the inbox (star + `Shortlisted`, `NeedsAttention`) are part of the routine for everyone.
 
 ## 0. Prepare
 - `jobtracker` and `gmail` MCP tools must be connected. If ToolSearch says CONNECT_TIMEOUT, tell the user to run `/mcp` (cold start from
@@ -47,6 +66,7 @@ scripts in `scripts/`.
 - Report added / duplicate / re-application / failed.
 
 ## 2 + 3. Triage the inbox, file receipts and rejections
+Filing runs only as the preferences allow: `file_rejections` / `file_receipts` = `no` means classify and report, move nothing.
 1. `gmail-job-inbox-triage/scripts/triage_inbox.py --out <scratch>/triage` (read-only; add `--since all` only if rules changed).
 2. **Needs-you** (`NEEDS_YOU`): stays in the inbox, goes first in the report. A reminder for a step the user has already done
    (e.g. a personality test they confirm is finished) may be filed once they say so. **Mail the user has labelled
@@ -69,46 +89,48 @@ scripts in `scripts/`.
    your application" button is NOT a receipt**: the application is incomplete until the user clicks it, so it stays in the inbox
    and goes first in the report (file it only after the user says they confirmed). The same holds for any real request
    (documents, a test not yet taken, a questionnaire that is part of the process, an interview invitation).
-5. Do not wait for another yes on high-confidence items; the user asked for the sort.
+5. For actions their preferences enable, do not wait for another yes on high-confidence items; the user asked for the sort.
 5a. **Positive replies (`SHORTLISTED`)** - standing rule: star the mail, add the label `JobApplications/Shortlisted`, KEEP it in the inbox (`gmail-job-inbox-triage/scripts/mark_shortlisted.py`). **If the mail also asks the user to do something** (pick or confirm an appointment, accept a rescheduled time, reply, take a test), also add `JobApplications/NeedsAttention` (`update_labels(add_labels=...)`, user rule, 2026-11-03, act legal): a shortlisted mail with an open action is needs-you as well, so it carries both labels. Then update the tracker (`interviewing` / `offer`) when company and title match. Also add or update the job's section in `data/shortlisted.md` (optional, your own interview notes; skip this step if the file does not exist) (timeline, open steps) **and pull the job description**: copy the full text from the tracker (`get_job`) into `data/<company>_interview.md` (header with id/status/posting, invitation details, then the full description; see `data/sonar_interview.md`) and link it from the section. If the stored description is empty, say so in the report and fix it with `update_job(description=...)`. **If the job is not in the tracker at all (applied via Easy Apply and never pasted), do not wait for a paste:** find the posting yourself (company career site first, else `firecrawl_search` for the exact title + company, aggregators like BeBee/Glassdoor are fine), `add_job` it (our scraper first), set the status, trim page chrome with `update_job(description=...)`, then write the `data/<company>_interview.md` file. **German postings get an English version:** if the job description is in German, keep the original text and append a section `## English version` at the very bottom of `data/<company>_interview.md` with a faithful, complete English translation of the description (all duties, requirements, benefits; nothing summarised or invented; keep technical terms and the job title as written). English postings need no extra section. Say in the report which source the text came from. **A company that withdraws or rejects AFTER shortlisting is NOT filed as a normal rejection:** keep the mail in the inbox with `Shortlisted` + `JobApplications/NeedsAttention`, leave the tracker at `interviewing` with a note, keep the section in `data/shortlisted.md` (optional, your own interview notes; skip this step if the file does not exist) (open step: user replies, re-check after a week), and only after the user says so, or a week passes with no answer or a final no, set `rejected`, file the mail to `Rejected` and close the section. Report it under "Needs you", not "Rejections". For other closings (offer declined, user withdrew, final rejection), set the tracker to `rejected` (or the matching status) and move its section from `data/shortlisted.md` (optional, your own interview notes; skip this step if the file does not exist) to `data/shortlisted_closed.md` with the closing date and reason. Automated assessment/test mails (ELIGO, personality tests, Continental Online Assessment, ...) are NOT shortlisted, but they ask the user to act: add `JobApplications/NeedsAttention`, keep them in the inbox and report the deadline.
-5a2. **`STALE_PROFILE` mails** ("your profile will be deleted for inactivity - log in") - standing permission: trash them with `trash_emails.py` (dry run, then `--apply`) and list them in the report.
+5a2. **`STALE_PROFILE` mails** ("your profile will be deleted for inactivity - log in") - per `stale_profile_mails`: `trash` -> trash them with `trash_emails.py` (dry run, then `--apply`) and list them in the report; `leave` -> keep them and mention the count.
 5a3. **Update the notes on ongoing interviews every run, even when no new positive reply arrived.** Read `data/shortlisted.md` (optional, your own interview notes; skip this step if the file does not exist) and, for every active section (one section per company you are interviewing with), look at the newest mails of its Gmail thread **in both directions, inbox AND Sent**. Run `gmail-job-inbox-triage/scripts/company_thread.py <Company> [<Company> ...] --days 45 --text` (read-only; lists received and SENT mail oldest first with attachments). A task counts as open only if neither a received nor a sent mail shows it done; never write "no sent mail seen" without having run this (`search_emails` on the company name / `label:JobApplications/Shortlisted` as before; the triage lists them as `UNCLASSIFIED`: calendar invites, cancellations, "Re:" replies, reschedules). Add each new event to the section's Timeline with its date (interview booked / moved / cancelled / held, replies from either side, tasks promised or sent), tick or add Open / next steps, and flag steps whose date has passed or whose wait period ended (e.g. the one-week wait after a withdrawal). Write only what the mails state; if a date or time is only in a calendar attachment, or you cannot tell whether an interview took place or how it went, say so in the note and ask the user. Then set the tracker status only on evidence, as in 5a. Do this before the report and list what changed under "Positive replies / ongoing interviews".
 5b. **Read every `DOUBTFUL` and `UNCLASSIFIED` mail** (bodies are in `<scratch>/triage/bodies.json`) and settle it: plain receipt -> file, rejection -> file + mark job, interview/assessment/draft/profile request -> `NEEDS_YOU` (report first; set the job `interviewing` only when the mail names company **and** title). Never leave a job-related mail unaccounted for.
 5c. **Verification pass after filing:** re-run `triage_inbox.py --since 14 --out <scratch>/triage_check`. Whatever is still listed must be a mail you deliberately left (needs-you, or a status update) and must appear in the report. If the user later names a mail you missed, follow the "Gotchas" in `gmail-job-inbox-triage/SKILL.md`.
-5d. **Inbox sweep.** `triage_inbox.py` can miss mail (rules that return nothing, mail missing from its download). After filing, list **every mail in `in:inbox newer_than:21d`** straight from Gmail with `gmail-job-inbox-triage/scripts/inbox_sweep.py --days 21 --hide-noise` (From/Subject/Date only, `NA` = NeedsAttention; run in the background if slow; not parallel MCP calls; do not write throwaway sweep scripts into the scratchpad, they vanish between sessions) and go through the list yourself. Anything job-related that is not a deliberately kept mail (needs-you, shortlisted thread, held company letter, gig outreach) is handled in the same run: consent / data-retention / "keep my data" mail and talent or job newsletters -> trash (`trash_emails.py`); portal-account-created mails, feedback surveys and receipts -> `JobApplications`; assessment / interview / reschedule mails -> `NeedsAttention` and into the notes (5a3). Then add the missed pattern to `triage_rules.py` / `clean_job_suggestions.py` with a regression case (`test_triage.py`) and say in the report which rule was added. Non-job mail (shopping, banking, newsletters unrelated to the job search) is not touched; mention only a count.
-6. **Mark rejected jobs in the DB** (not the withdrawn-after-shortlisting jobs from step 3; those stay `interviewing` with a note) (`jobtracker-gmail-sync` evidence standard: company **and** title must match; settle ambiguity from
+5d. **Inbox sweep.** `triage_inbox.py` can miss mail (rules that return nothing, mail missing from its download). After filing, list **every mail in `in:inbox newer_than:21d`** straight from Gmail with `gmail-job-inbox-triage/scripts/inbox_sweep.py --days 21 --hide-noise` (From/Subject/Date only, `NA` = NeedsAttention; run in the background if slow; not parallel MCP calls; do not write throwaway sweep scripts into the scratchpad, they vanish between sessions) and go through the list yourself. Anything job-related that is not a deliberately kept mail (needs-you, shortlisted thread, held company letter, gig outreach) is handled in the same run: consent / data-retention / "keep my data" mail and talent or job newsletters -> trash (`trash_emails.py`) only if `stale_profile_mails` / `job_alerts` is `trash`, otherwise leave and count them; portal-account-created mails, feedback surveys and receipts -> `JobApplications`; assessment / interview / reschedule mails -> `NeedsAttention` and into the notes (5a3). Then add the missed pattern to `triage_rules.py` / `clean_job_suggestions.py` with a regression case (`test_triage.py`) and say in the report which rule was added. Non-job mail (shopping, banking, newsletters unrelated to the job search) is not touched; mention only a count.
+6. **Mark rejected jobs in the DB** (per `mark_rejected_in_tracker`: `ask` -> list them and ask first) (not the withdrawn-after-shortlisting jobs from step 3; those stay `interviewing` with a note) (`jobtracker-gmail-sync` evidence standard: company **and** title must match; settle ambiguity from
    evidence: most recent `applied` entry; if the same posting is in the tracker twice, close both; leave older, already-closed entries).
    `update_job(status="rejected", notes="Rejected per email <date> (gmail:<id>)")`. Skip jobs already `rejected`.
 7. Commit: `triage_inbox.py --out <scratch>/triage --no-fetch --commit`.
 
-## 4. Job letters (standing permission to trash)
-The user has authorised this for this skill (it overrides the old "wait for the go-ahead" rule): job-site alerts are always trashed; company letters are trashed unless they list a full-time AI role.
-- Job-site alerts (LinkedIn/Stepstone/Glassdoor/XING/jobvector/Instaffo...): **always trashed, AI role or not** - the user never opens
-  them. `clean_job_suggestions.py --out <scratch>/sugg --report-ai` (dry run), look at WOULD TRASH / KEPT, then the same with
-  `--apply`. `--report-ai` reads the bodies and lists the full-time AI roles seen in the alerts before they are trashed (use
-  `--hold-ai` instead only if the user asks to keep alerts that have an AI role). Recoverable from Trash for ~30 days.
-- Company job-agent letters (SuccessFactors/jobs2web etc.): `scan_company_jobletters.py --out <scratch>/cjl --trash-no-ai`.
-  It trashes only letters without a full-time AI role and prints the others. Run `--since all` first if this is the first run with a
-  new rule. Letters carry no links: the user finds the role on the company's career site.
-- "Your application was viewed by X" notices (LinkedIn, Stepstone, Indeed, ...) are trashed too (rule `application viewed notice`): they
-  mean nothing until the company answers. A real answer or a "message from <company>" notice stays protected and is reported.
-- Protected mail (application receipts/updates, recruiter messages, invitations, billing/security) is never trashed.
-- **Alerts are just deleted: never list or summarise roles from LinkedIn/Stepstone/Glassdoor/XING/jobvector alerts in the report**. Run `clean_job_suggestions.py` without `--report-ai` and mention only the count.
-- "Zwischenstand"/status-delay mails ("selection is delayed") from a company whose confirmation is already in `JobApplications` are useless: trash them (search `<company> label:JobApplications` first).
-- **Read the AI-role list yourself (company letters held only, never alerts)** and write a clean list: company, role title, location, salary if shown, mail date, sender + subject
-  (so the user can find it in Gmail). Drop duplicates across mails, drop roles already in `jobtracker.db` (check with `search_jobs`),
-  drop internships/thesis/working-student roles. Roles that are only `Data Engineer`-type are "related": list them separately.
-  The raw segments printed by the scripts are noisy and glue neighbouring titles; do not paste them.
+## 4. Job-board alerts and company letters (only as the preferences say)
+Read `data/routine-preferences.md` first (section 0a). Every trash below needs the matching setting; `leave` means do nothing and
+only mention a count. Always dry run, show WOULD TRASH / KEPT, then `--apply`. Recoverable from Trash for about 30 days.
+- **Job-board alerts** (`job_alerts`; LinkedIn/StepStone/Glassdoor/XING/Indeed/...): `trash` -> `clean_job_suggestions.py --out <scratch>/sugg`
+  (add `--report-ai` only if `job_alerts_report_roles` is `yes`, so the roles seen are listed before they are trashed; otherwise
+  mention only the count), then `--apply`. `leave` -> skip.
+- **Company job-agent letters** (`company_job_letters`; SuccessFactors/jobs2web-style mailers): `scan_company_jobletters.py --out <scratch>/cjl`.
+  `leave` -> do not run it. `ask-each-run` -> run it read-only, report, trash only when the user says so this time (a past yes does not
+  carry over). `trash-all` -> `--trash`. `trash-unless-matching-role` -> `--trash-no-ai`: trashes only letters **without** a matching role
+  and prints the others. The role matching (`gmail-job-inbox-triage/scripts/ai_roles.py`, `CORE` / `NONFT`) is tuned for AI/ML roles;
+  edit those lists for another field before using this option. Run `--since all` first if this is the first run with a new rule.
+- **Notices** (`low_value_notices`): "application viewed by X" notices and status-delay mails ("selection is delayed") from a company whose
+  confirmation is already filed: `trash` -> trash them (search `<company> label:<receipts label>` first); `leave` -> skip.
+  A real answer or a "message from <company>" notice stays protected and is reported either way.
+- Protected mail (application receipts/updates, recruiter messages, invitations, billing/security) is never trashed, whatever the settings.
+- When letters are held or listed, **read the role list yourself and write a clean one**: company, role title, location, salary if shown,
+  mail date, sender + subject (so the user can find it in Gmail). Drop duplicates across mails, roles already in `jobtracker.db` (`search_jobs`)
+  and internships/thesis/working-student roles. Roles that are only `Data Engineer`-type are "related": list them separately. The raw
+  segments printed by the scripts are noisy and glue neighbouring titles; do not paste them. Never list roles from job-board alerts unless
+  `job_alerts_report_roles` is `yes`.
 
 ## 5. Report (in this order, short)
 0. **Ongoing interviews** - one line per active section of `data/shortlisted.md` (optional, your own interview notes; skip this step if the file does not exist) saying what the notes update (step 5a3) changed, and what is still open or overdue (interview held but outcome unknown, task owed, wait period over).
 0b. **Positive replies** - each shortlisted mail (starred + labelled, still in the inbox) with company, role and what is asked (e.g. book a slot), and the tracker status you set.
 1. **Needs you** - each mail with sender, date, deadline and what is asked (interview invitations, assessments with deadlines, draft/incomplete applications, profile requests).
-2. **AI full-time roles found in company job letters** (still in Gmail) - table: company, role, location/salary, date, where to find it in Gmail. Nothing from alerts; skip the section if there are no held letters.
+2. **Roles found in company job letters** (still in Gmail; only if letters were scanned and held) - table: company, role, location/salary, date, where to find it in Gmail. Nothing from alerts unless `job_alerts_report_roles` is `yes`; skip the section otherwise.
 3. **Rejections** filed, each with its deciding sentence, and the jobs marked `rejected` (ids). Withdrawals after shortlisting are NOT listed here but under item 1 (Needs you).
 4. **DB update** - added / duplicates / re-applications / failures, and EVERY job whose description had a problem (id, what was wrong, what you did, source of the final text).
 5. **Receipts** filed (counts) and the doubtful ones settled.
-6. **Trashed** (counts per source + undo-log paths in `data/trashed_emails_log/`), and which company letters stay because they list an AI role.
+6. **Trashed** (only what the preferences allow: counts per source + undo-log paths in `data/trashed_emails_log/`), which company letters were kept and why, and what was left alone because the preference is `leave` or `(not set)`.
 7. Anything where you made a judgement call (e.g. which duplicate entry you closed).
 Say that cleanup removes only what exists now; alerts keep arriving.
 
