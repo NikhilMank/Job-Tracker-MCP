@@ -15,9 +15,15 @@
 - stale_profile_mails: (not set)   <!-- "your profile will be deleted / keep my data?" mails: leave | trash -->
 - low_value_notices: (not set)     <!-- "your application was viewed", "selection is delayed" mails: leave | trash -->
 
-## Filing
-- file_receipts: (not set)         <!-- move application confirmations out of the inbox into the receipts label: yes | no -->
+## Filing and labels
+<!-- Every Gmail label belongs to one feature. A label is created ONLY if you say yes to its feature. -->
+- file_receipts: (not set)         <!-- move application confirmations out of the inbox into the parent label: yes | no -->
+- label_easyapply: (not set)       <!-- also tag LinkedIn Easy Apply receipts with a sub-label (needs file_receipts): yes | no -->
 - file_rejections: (not set)       <!-- move rejections out of the inbox into the Rejected label: yes | no -->
+- label_shortlisted: (not set)     <!-- star + label positive replies (interview invitations); they stay in the inbox: yes | no -->
+- label_needs_attention: (not set) <!-- label mail that asks you to do something (assessments, bookings); stays in the inbox: yes | no -->
+- label_attended: (not set)        <!-- a label you add yourself to threads you handled, so the routine stops reminding you (needs label_needs_attention): yes | no -->
+- label_accepted: (not set)        <!-- a label for offers/contracts, used when syncing the tracker from Gmail: yes | no -->
 - mark_rejected_in_tracker: (not set) <!-- set the matching job to "rejected" in the tracker: yes | ask -->
 
 ## Notes

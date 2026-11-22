@@ -30,7 +30,7 @@ run them in the background and wait with an `until grep -q DONE <log>` loop, not
 **0. Saved run time.** `scripts/mail_state.py show`. After the first full sweep every task reads only mail **newer than its
 last completed run** plus its *pending ids* (mails deliberately left behind), so runs stay cheap. See "Saved run time" below.
 
-**Preferences first.** Trashing and filing mail is the user's choice: read `data/routine-preferences.md` (created by `daily-job-routine`; if it does not exist, ask the questions in its section 0a before moving or trashing anything). A. and B. below run only as those settings say.
+**Preferences first.** Trashing and filing mail is the user's choice: read `data/routine-preferences.md` (created by `daily-job-routine`; if it does not exist, ask the questions in its section 0a before moving or trashing anything). A. and B. below run only as those settings say. Labels are opt-in too: use `Shortlisted`, `NeedsAttention`, `EasyApply`, `Attended`, `Rejected` or the receipts label only if the matching preference (`label_*`, `file_*`) is `yes`; otherwise still classify and report the mail, but do not label or move it.
 
 **A. Job-suggestion cleanup** (when you add or change a rule, run it once with `--since all`: the saved run time otherwise hides older mail that the new rule would catch) - `scripts/clean_job_suggestions.py --out <scratchpad>/sugg [--since all] ` (dry run), look at the
 "would trash" counts and the "kept" list, then re-run with `--apply`. Trashes job *suggestions* from LinkedIn (job alerts,
