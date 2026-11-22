@@ -3,6 +3,9 @@
 <!-- Private. Lives in data/routine-preferences.md (git-ignored). Created by the daily-job-routine skill on the
      first run from your answers. Edit freely, or say "change my routine preferences". Anything not set here is left alone. -->
 
+## Setup
+- gmail_enabled: (not set)         <!-- use the Gmail features at all: yes | no -->
+
 ## Mail handling
 <!-- "trash" always means Gmail's Trash (an undo log is written, mail stays recoverable ~30 days). Nothing is deleted permanently. -->
 
