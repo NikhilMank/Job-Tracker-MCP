@@ -129,9 +129,9 @@ python gmail_mcp.py --auth
 4. The browser then shows **"localhost refused to connect"**. That is expected. Copy the **full URL from the address bar** (it starts with `http://localhost:8765/?state=...&code=...`), paste it into the terminal and press Enter.
 5. `.gmail-token.json` is created. Keep the terminal open until it says the token was saved; the code in the URL is single-use.
 
-**6. Create the labels the skills use.** The easiest way: start Claude Code and say *"set up my job tracker"*; the `first-time-setup` skill checks everything, creates any missing labels (after asking you), and asks your preferences. Or create them yourself in Gmail (left sidebar > **+** next to Labels), or run `python scripts/setup_check.py --apply`:
+**6. Choose and create labels (optional).** The easiest way: start Claude Code and say *"set up my job tracker"*; the `first-time-setup` skill checks everything, asks which label features you want, creates only those (after asking you) and saves your preferences. Or create the ones you want yourself in Gmail (left sidebar > **+** next to Labels), or run `python scripts/setup_check.py --labels rejected,shortlisted --apply`. All labels the skills can use:
 
-`JobApplications`, then nested under it: `JobApplications/Rejected`, `JobApplications/EasyApply`, `JobApplications/Shortlisted`, `JobApplications/NeedsAttention`, `JobApplications/Attended`. To use another prefix set `JOBTRACKER_LABEL_PREFIX` (see [Gmail skills and labels](#gmail-skills-and-labels)).
+`JobApplications` (filed receipts, also the parent of the others), `JobApplications/Rejected`, `JobApplications/EasyApply`, `JobApplications/Shortlisted`, `JobApplications/NeedsAttention`, `JobApplications/Attended`, `JobApplications/Accepted`. Create only the ones for features you want. To use another prefix set `JOBTRACKER_LABEL_PREFIX` (see [Gmail skills and labels](#gmail-skills-and-labels)).
 
 **7. Reconnect and test.** Restart Claude Code (or run `/mcp`), confirm `gmail` is connected and ask: *"How many emails are in my inbox?"* (`get_gmail_stats`).
 
@@ -209,7 +209,7 @@ They read your private `data/profile.md` and `data/cv.md` and never invent exper
 
 ## Gmail skills and labels
 
-The skills file mail into labels under one parent label, **`JobApplications`** by default:
+The skills can file mail into labels under one parent label, **`JobApplications`** by default. **Every label is optional**: the setup asks which features you want and creates only those labels. Without a label, the matching mail is still classified and reported, just not labelled or moved.
 
 | Label | Meaning |
 |---|---|
@@ -220,7 +220,7 @@ The skills file mail into labels under one parent label, **`JobApplications`** b
 | `JobApplications/NeedsAttention` | mail that asks you to do something |
 | `JobApplications/Attended` | you add it to threads you have dealt with; the routine stops reminding you |
 
-The `first-time-setup` skill creates any missing labels for you (or run `python scripts/setup_check.py --apply`). To use another prefix set `JOBTRACKER_LABEL_PREFIX` (for example `export JOBTRACKER_LABEL_PREFIX=Jobs2026`) before running Claude Code. Set `JOBTRACKER_USER_HINTS="yourname,yourdomain.com"` (comma separated) so the classifiers can recognise mail you sent yourself.
+The `first-time-setup` skill creates the labels you choose (or run `python scripts/setup_check.py --labels rejected,shortlisted --apply`). To use another prefix set `JOBTRACKER_LABEL_PREFIX` (for example `export JOBTRACKER_LABEL_PREFIX=Jobs2026`) before running Claude Code. Set `JOBTRACKER_USER_HINTS="yourname,yourdomain.com"` (comma separated) so the classifiers can recognise mail you sent yourself.
 
 | Skill | Purpose |
 |---|---|
