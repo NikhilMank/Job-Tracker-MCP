@@ -25,6 +25,18 @@ check("fastmcp 4.0.0 rejected", sc.fastmcp_ok("4.0.0"), False)
 check("fastmcp 3.4.6 rejected", sc.fastmcp_ok("3.4.6"), False)
 check("fastmcp garbage", sc.fastmcp_ok("abc"), False)
 
+check("pref yes", sc.gmail_enabled_from_preferences("## Setup\n- gmail_enabled: yes   <!-- x -->\n"), True)
+check("pref no", sc.gmail_enabled_from_preferences("- gmail_enabled: no\n"), False)
+check("pref not set", sc.gmail_enabled_from_preferences("- gmail_enabled: (not set)  <!-- yes | no -->\n"), None)
+check("pref absent", sc.gmail_enabled_from_preferences("# nothing"), None)
+check("pref none text", sc.gmail_enabled_from_preferences(None), None)
+check("gmail: no skips even with files", sc.want_gmail(False, False, False, True)[0], False)
+check("gmail: yes runs", sc.want_gmail(False, False, True, False)[0], True)
+check("gmail: undecided without files skips", sc.want_gmail(False, False, None, False)[0], False)
+check("gmail: undecided with files runs", sc.want_gmail(False, False, None, True)[0], True)
+check("--gmail forces over a no", sc.want_gmail(True, False, False, False)[0], True)
+check("--no-gmail wins", sc.want_gmail(True, True, True, True)[0], False)
+
 class _Req:
     def __init__(s, log, body): s.log, s.body = log, body
     def execute(s): s.log.append(s.body["name"]); return {}

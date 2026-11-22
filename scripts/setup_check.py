@@ -4,10 +4,13 @@
   .venv/bin/python scripts/setup_check.py                          # check everything, change nothing
   .venv/bin/python scripts/setup_check.py --prefix Jobs2026        # check labels under another parent label
   .venv/bin/python scripts/setup_check.py --no-gmail               # tracker only
+  .venv/bin/python scripts/setup_check.py --gmail                  # force the Gmail checks (after the user said yes)
   .venv/bin/python scripts/setup_check.py --apply                  # also create the missing Gmail labels (and data/)
 
 Checks: Python and FastMCP versions, installed packages, project MCP config, writable data folder, .gitignore
-coverage of private files, and (unless --no-gmail) the Gmail credentials, token scopes and the label structure.
+coverage of private files, and the Gmail credentials, token scopes and label structure. Gmail is optional: by default
+the Gmail checks run only if the user wants Gmail (`gmail_enabled: yes` in data/routine-preferences.md) or, when that is
+not decided yet, if Gmail files already exist. `gmail_enabled: no` skips them silently.
 Never prints credentials, tokens or mail. Creating labels never touches existing mail. Exit code 1 if any check FAILs.
 """
 import argparse, importlib.metadata as md, importlib.util, json, os, sys
@@ -21,6 +24,29 @@ REQUIRED_SCOPES = [
 CHILD_LABELS = ["Rejected", "EasyApply", "Shortlisted", "NeedsAttention", "Attended"]
 OPTIONAL_CHILD_LABELS = ["Accepted"]
 GITIGNORE_NEEDS = ["*.db", "data/*", ".gmail-token.json", "gmail_credentials.json"]
+
+
+def gmail_enabled_from_preferences(text):
+    """True / False from a `- gmail_enabled: yes|no` line in data/routine-preferences.md, None if absent or '(not set)'."""
+    for line in (text or "").splitlines():
+        line = line.split("<!--")[0].strip().lstrip("-").strip().lower()
+        if line.startswith("gmail_enabled:"):
+            v = line.split(":", 1)[1].strip()
+            return True if v.startswith("yes") else False if v.startswith("no") else None
+    return None
+
+
+def want_gmail(flag_gmail, flag_no_gmail, preference, files_exist):
+    """Decide whether the Gmail checks run. Returns (run, reason)."""
+    if flag_no_gmail:
+        return False, "skipped (--no-gmail)"
+    if flag_gmail:
+        return True, ""
+    if preference is False:
+        return False, "skipped (you chose no Gmail: gmail_enabled is no)"
+    if preference is True or files_exist:
+        return True, ""
+    return False, "not set up and not asked yet; it is optional (the first-time-setup skill asks)"
 
 
 def required_labels(prefix, with_optional=False):
@@ -148,14 +174,21 @@ def check_gmail(prefix, apply, with_optional):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--prefix", default=os.environ.get("JOBTRACKER_LABEL_PREFIX", "JobApplications"), help="parent Gmail label")
-    ap.add_argument("--no-gmail", action="store_true")
+    ap.add_argument("--no-gmail", action="store_true", help="skip the Gmail checks")
+    ap.add_argument("--gmail", action="store_true", help="run the Gmail checks even if no preference is saved")
     ap.add_argument("--with-optional", action="store_true", help="also the optional 'Accepted' label")
     ap.add_argument("--apply", action="store_true", help="create missing labels / data folder")
     a = ap.parse_args()
     print(f"JobTracker setup check ({'APPLY' if a.apply else 'dry run'}), label prefix '{a.prefix}'\n")
     check_environment(a.apply)
-    if a.no_gmail:
-        report("INFO", "Gmail", "skipped (--no-gmail)")
+    try:
+        pref = gmail_enabled_from_preferences(open(os.path.join(ROOT, "data", "routine-preferences.md")).read())
+    except OSError:
+        pref = None
+    files = os.path.exists(os.path.join(ROOT, ".gmail-token.json")) or os.path.exists(os.path.join(ROOT, "gmail_credentials.json"))
+    run, why = want_gmail(a.gmail, a.no_gmail, pref, files)
+    if not run:
+        report("INFO", "Gmail", why)
     else:
         print()
         check_gmail(a.prefix, a.apply, a.with_optional)
