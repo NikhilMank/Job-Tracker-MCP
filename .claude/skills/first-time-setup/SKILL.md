@@ -55,7 +55,7 @@ missing). It asks the user about every choice; it never decides what to delete o
    (job-board alerts, employer job letters, "keep my data" mails, "application viewed" notices, tracker marking of rejections), 2-3 at a
    time, recommending the safe answer (`leave` / `no`) without choosing for them. If Gmail is off there is nothing mail-related to ask.
    Write `data/routine-preferences.md` from `.claude/skills/daily-job-routine/routine-preferences.template.md`, set `gmail_enabled`,
-   print it back and confirm. If the file already exists, show it and ask only what they want to change.
+   print it back and confirm. If the file already exists, show it and ask only about keys that are missing or `(not set)` (`setup_check.py` lists them; after an update these are the new questions) plus anything they want to change. Never re-ask an answer they already gave.
 7. **Profile.** Offer `profile-from-resume` (they have a CV) or `profile-setup` (interview), or skip for now.
 8. **Final verification.** Run `scripts/setup_check.py --prefix <name>` one more time (the script skips Gmail by itself when `gmail_enabled` is `no`) and summarise as a short checklist: environment,
    MCP servers, Gmail (signed in, permissions, the labels you chose; for a no-Gmail user write "Gmail: not used, by your choice"), preferences saved, profile. Mark each `ready`, `skipped by you` or `still to do`

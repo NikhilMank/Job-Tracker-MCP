@@ -46,13 +46,13 @@ Gmail itself is optional, and different people want different things done with t
 - If Gmail is wanted (`yes`) and a label the routine needs (`<prefix>`, `/Rejected`, `/EasyApply`, `/Shortlisted`, `/NeedsAttention`, `/Attended`) does not exist, or Gmail is not signed in, run the `first-time-setup` skill (steps 4-5) first. `scripts/setup_check.py` is the quick check.
 - `jobtracker` and `gmail` MCP tools must be connected. If ToolSearch says CONNECT_TIMEOUT, tell the user to run `/mcp` (cold start from
   a project on a Windows drive mounted in WSL (`/mnt/...`) can exceed 30 s) - do not work around it. See `gmail-mcp-troubleshooting`.
-- Read `data/todays_jobs.md` (do not rely on the user saying they applied or not). If it is the empty template, skip step 1 **and the
+- Read `data/todays_jobs.md`, creating it from `data/todays_jobs.template.md` if it does not exist yet (do not rely on the user saying they applied or not). If it is the empty template, skip step 1 **and the
   up-front backup** and say so. Otherwise run `.venv/bin/python scripts/backup_db.py` before adding jobs.
 - Step 3's status updates (marking jobs `rejected`) still take their own backup right before the first write; skip it only if the user says so.
 
 ## 1. Update the DB
 ### The daily file
-`data/todays_jobs.md` (git-ignored; an empty template ships with the repo) is where the user pastes the jobs they applied to: **links**
+`data/todays_jobs.md` is private and git-ignored, so a fresh clone does not have it: if it is missing, create it by copying `data/todays_jobs.template.md` (the tracked template) and tell the user to paste their jobs there. It is where the user pastes the jobs they applied to: **links**
 (one URL per line, optional `#tags`) under "Links to add" and, for Easy Apply jobs without a usable link or sites that block scraping,
 **pasted descriptions** under "Pasted descriptions" (`### Company, Title`, optional URL line, the text, then `---`). On "update the db with
 today's jobs":
@@ -66,7 +66,7 @@ today's jobs":
   list every duplicate and re-application in the report. A same-company, similar-title job with a different link is not blocked; just
   mention the earlier entry. Without a URL, `add_job_from_text` keys the job by `manual:<hash>` (company + title + text).
 - When done, verify every new id exists, then **clear `data/todays_jobs.md`**: delete everything under the template headings (links, pasted
-  descriptions and any `## Done` log) so it is the empty template again. The database holds the full text, so keep no raw copies or Done
+  descriptions and any `## Done` log) so it is the empty template again (the same content as `data/todays_jobs.template.md`). The database holds the full text, so keep no raw copies or Done
   list in the file; the added / duplicate / failed summary goes in the chat report.
 - Confirmation emails are filed afterwards only as the user's preferences allow (`gmail_enabled` and `file_receipts`, section 0a).
 
