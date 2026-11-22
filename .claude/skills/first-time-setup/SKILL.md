@@ -23,13 +23,14 @@ missing). It asks the user about every choice; it never decides what to delete o
    `crawl4ai-setup` only if they want to scrape URLs). Do not continue past a `FAIL`.
 2. **MCP servers connected.** Call `get_stats` (jobtracker). If the tool is missing or errors, tell the user to start Claude Code from
    the repo folder, approve the project servers and check `/mcp` (see `gmail-mcp-troubleshooting`). Do not work around it.
-3. **Gmail?** Ask: "Do you want Gmail features (file application receipts and rejections, inbox triage)? You can add this later."
-   If no: skip to step 7 and save `gmail_enabled: no` in the preferences.
-4. **Gmail sign-in.** Run `scripts/setup_check.py` again (it now also checks Gmail). If `gmail_credentials.json` or the token is missing,
+3. **Gmail?** Ask first, before mentioning any Google or Gmail setup: "Do you want Gmail features (file application receipts and rejections, inbox triage)? It is optional and needs a one-time Google Cloud setup; you can add it later."
+   - **No:** save `gmail_enabled: no` in `data/routine-preferences.md` now (from the template), skip steps 4, 5 and 6's mail questions entirely (only ask what still applies), and go to step 7. Do not ask about Google Cloud, sign-in or labels again.
+   - **Yes:** save `gmail_enabled: yes` and continue with step 4.
+4. **Gmail sign-in (only if they said yes).** Run `scripts/setup_check.py --gmail` (checks Gmail too). If `gmail_credentials.json` or the token is missing,
    walk the user through README Setup > B (Google Cloud project, Gmail API, consent screen with themselves as test user, Desktop OAuth
    client, `python gmail_mcp.py --auth`, tick **all** checkboxes) and re-run until the token has all three permissions. Then confirm with
    `get_gmail_stats` that the `gmail` server works.
-5. **Label structure.**
+5. **Label structure (only if Gmail is enabled).**
    - Ask for the parent label name; default `JobApplications`. If they pick another, it must be set for every script: with their approval
      add it to `.claude/settings.local.json` (git-ignored) as `{"env": {"JOBTRACKER_LABEL_PREFIX": "<name>"}}`, merging with any existing
      content, and tell them to restart Claude Code so it takes effect. Until restarted, pass `--prefix <name>` yourself.
@@ -41,14 +42,14 @@ missing). It asks the user about every choice; it never decides what to delete o
      `<prefix>/Accepted` (offers), added with `--with-optional`.
    - If labels are missing, ask "Create these N labels?". On yes run `scripts/setup_check.py --prefix <name> --apply`, then re-run it
      without `--apply` and confirm nothing is missing. Existing labels are never changed.
-6. **Preferences.** Ask the questions of `daily-job-routine` section 0a (job-board alerts, employer job letters, "keep my data" mails,
-   "application viewed" notices, filing receipts, filing rejections and tracker marking), 2-3 at a time with the options explained,
+6. **Preferences.** If Gmail is enabled, ask the questions of `daily-job-routine` section 0a (job-board alerts, employer job letters, "keep my data" mails,
+   "application viewed" notices, filing receipts, filing rejections and tracker marking); if not, there is nothing mail-related to ask, 2-3 at a time with the options explained,
    recommending the safe answer (`leave` / `no`) without choosing for them. Write `data/routine-preferences.md` from
    `.claude/skills/daily-job-routine/routine-preferences.template.md`, set `gmail_enabled: yes`, print it back and confirm. If the file
    already exists, show it and ask only what they want to change.
 7. **Profile.** Offer `profile-from-resume` (they have a CV) or `profile-setup` (interview), or skip for now.
-8. **Final verification.** Run `scripts/setup_check.py --prefix <name>` one more time and summarise as a short checklist: environment,
-   MCP servers, Gmail (signed in, permissions, labels), preferences saved, profile. Mark each `ready`, `skipped by you` or `still to do`
+8. **Final verification.** Run `scripts/setup_check.py --prefix <name>` one more time (the script skips Gmail by itself when `gmail_enabled` is `no`) and summarise as a short checklist: environment,
+   MCP servers, Gmail (signed in, permissions, labels; for a no-Gmail user write "Gmail: not used, by your choice"), preferences saved, profile. Mark each `ready`, `skipped by you` or `still to do`
    with the exact next action. Point to README "Getting started" and mention they can say "change my routine preferences" later.
 
 ## Notes

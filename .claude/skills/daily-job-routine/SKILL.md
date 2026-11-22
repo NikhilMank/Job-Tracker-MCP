@@ -24,7 +24,7 @@ preferences (section 0a) say so.** Run from the project root with `.venv/bin/pyt
 scripts in `scripts/`.
 
 ## 0a. Routine preferences (ask once, then follow them)
-Different people want different things done with their mail, so this skill never decides that for them. The choices live in
+Gmail itself is optional, and different people want different things done with their mail, so this skill never decides that for them. The choices live in
 `data/routine-preferences.md` (git-ignored; template: `.claude/skills/daily-job-routine/routine-preferences.template.md`).
 - **File missing (first run), or the user says "change my routine preferences":** run the `first-time-setup` skill (it checks the environment and Gmail, creates missing labels, and asks these questions); if the user only wants the preferences, ask the questions below, 2-3 at a time, with their
   options and what each does. Recommend the safe option (`leave` / `no`) but never choose for them and never infer an answer from
@@ -42,7 +42,8 @@ Different people want different things done with their mail, so this skill never
 - Labels-only actions that never remove mail from the inbox (star + `Shortlisted`, `NeedsAttention`) are part of the routine for everyone.
 
 ## 0. Prepare
-- If a label the routine needs (`<prefix>`, `/Rejected`, `/EasyApply`, `/Shortlisted`, `/NeedsAttention`, `/Attended`) does not exist, or Gmail is not signed in, run the `first-time-setup` skill (steps 4-5) first. `scripts/setup_check.py` is the quick check.
+- **If `gmail_enabled` is `no`** in `data/routine-preferences.md`, run only step 1 (update the tracker) and report that; skip every mail step (2-6 and section 4) and never mention Google sign-in or labels again.
+- If Gmail is wanted (`yes`) and a label the routine needs (`<prefix>`, `/Rejected`, `/EasyApply`, `/Shortlisted`, `/NeedsAttention`, `/Attended`) does not exist, or Gmail is not signed in, run the `first-time-setup` skill (steps 4-5) first. `scripts/setup_check.py` is the quick check.
 - `jobtracker` and `gmail` MCP tools must be connected. If ToolSearch says CONNECT_TIMEOUT, tell the user to run `/mcp` (cold start from
   a project on a Windows drive mounted in WSL (`/mnt/...`) can exceed 30 s) - do not work around it. See `gmail-mcp-troubleshooting`.
 - Read `data/todays_jobs.md` (do not rely on the user saying they applied or not). If it is the empty template, skip step 1 **and the
