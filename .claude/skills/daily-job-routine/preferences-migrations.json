@@ -1,0 +1,3 @@
+[
+  {"version": 1, "note": "Initial format. Future entries look like: {\"version\": 2, \"renamed\": {\"old_key\": \"new_key\"}, \"removed\": [\"unused_key\"], \"note\": \"what changed\"}. A renamed key keeps the user's value; a removed key is left in the file and reported as no longer used."}
+]

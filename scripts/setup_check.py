@@ -18,7 +18,7 @@ comes from data/routine-preferences.md (file_receipts, file_rejections, label_ea
 label_needs_attention, label_attended, label_accepted) or from --labels. No choice yet means no label is touched.
 Never prints credentials, tokens or mail. Creating labels never touches existing mail. Exit code 1 if any check FAILs.
 """
-import argparse, importlib.metadata as md, importlib.util, json, os, sys
+import argparse, importlib.metadata as md, importlib.util, json, os, re, sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 REQUIRED_SCOPES = [
@@ -79,6 +79,49 @@ def unanswered_preferences(template_text, prefs_text):
     tmpl, mine = preference_keys(template_text), preference_keys(prefs_text)
     gmail_off = preference(prefs_text, "gmail_enabled") is False
     return [k for k in tmpl if (k not in mine or mine[k] in ("", "(not set)")) and not (gmail_off and k != "gmail_enabled")]
+
+
+MIGRATIONS_PATH = os.path.join(".claude", "skills", "daily-job-routine", "preferences-migrations.json")
+
+
+def preferences_version(text):
+    """Format version recorded in the user's file; 1 when absent (files written before versioning)."""
+    v = preference_keys(text).get("preferences_version", "")
+    return int(v) if v.isdigit() else 1
+
+
+def pending_migrations(migrations, from_v, to_v):
+    return sorted([m for m in migrations or [] if from_v < int(m.get("version", 0)) <= to_v], key=lambda m: int(m["version"]))
+
+
+def migrate_preferences(text, migrations, to_v):
+    """Apply renames in order, keep every value and comment, note removed keys, bump preferences_version.
+    Returns (new_text, actions). Never drops an answer."""
+    actions, new = [], text
+    for m in pending_migrations(migrations, preferences_version(text), to_v):
+        for old, newk in (m.get("renamed") or {}).items():
+            pat = re.compile(r"^(\s*-\s*)" + re.escape(old) + r"(\s*:)", re.M)
+            if pat.search(new) and not re.search(r"^\s*-\s*" + re.escape(newk) + r"\s*:", new, re.M):
+                new = pat.sub(lambda mo: mo.group(1) + newk + mo.group(2), new, count=1)
+                actions.append(f"renamed {old} -> {newk} (your value kept)")
+        for gone in m.get("removed") or []:
+            if re.search(r"^\s*-\s*" + re.escape(gone) + r"\s*:", new, re.M):
+                actions.append(f"{gone} is no longer used (left in your file, ignored)")
+    line = f"- preferences_version: {to_v}"
+    if re.search(r"^\s*-\s*preferences_version\s*:.*$", new, re.M):
+        new = re.sub(r"^\s*-\s*preferences_version\s*:.*$", line, new, count=1, flags=re.M)
+    elif "## Setup" in new:
+        new = new.replace("## Setup\n", "## Setup\n" + line + "\n", 1)
+    else:
+        new = line + "\n" + new
+    return new, actions
+
+
+def resolve_prefix(cli, env, prefs_text, default="JobApplications"):
+    """Parent Gmail label: --prefix, then JOBTRACKER_LABEL_PREFIX, then label_prefix in the saved preferences, then the default."""
+    saved = preference_keys(prefs_text).get("label_prefix", "")
+    saved = "" if saved in ("", "(not set)") else saved
+    return cli or env or saved or default
 
 
 def want_gmail(flag_gmail, flag_no_gmail, preference, files_exist):
@@ -227,27 +270,20 @@ def check_gmail(prefix, apply, keys):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--prefix", default=os.environ.get("JOBTRACKER_LABEL_PREFIX", "JobApplications"), help="parent Gmail label")
+    ap.add_argument("--prefix", default=None, help="parent Gmail label (default: JOBTRACKER_LABEL_PREFIX, then label_prefix in your saved preferences, then JobApplications)")
     ap.add_argument("--no-gmail", action="store_true", help="skip the Gmail checks")
     ap.add_argument("--gmail", action="store_true", help="run the Gmail checks even if no preference is saved")
     ap.add_argument("--labels", help="comma separated label keys to check/create, or 'all' (default: your saved choice). Keys: " + ", ".join(LABEL_SUFFIX))
-    ap.add_argument("--apply", action="store_true", help="create missing labels / data folder")
+    ap.add_argument("--apply", action="store_true", help="create missing labels / data folder and migrate the preferences file")
     a = ap.parse_args()
-    print(f"JobTracker setup check ({'APPLY' if a.apply else 'dry run'}), label prefix '{a.prefix}'\n")
-    check_environment(a.apply)
     try:
-        prefs_text = open(os.path.join(ROOT, PREFS_PATH)).read()
+        prefs_text = open(os.path.join(ROOT, PREFS_PATH), encoding="utf-8").read()
     except OSError:
         prefs_text = None
-    if prefs_text is None:
-        report("INFO", "preferences", "not saved yet; the first-time-setup skill asks and saves them")
-    else:
-        try:
-            todo = unanswered_preferences(open(os.path.join(ROOT, PREFS_TEMPLATE)).read(), prefs_text)
-            report("OK" if not todo else "TODO", "preferences answered", "" if not todo else "not answered yet: " + ", ".join(todo) + " (say \"check my setup\" and I ask only these)")
-        except OSError:
-            pass
-    prefs_text = prefs_text or ""
+    prefix = resolve_prefix(a.prefix, os.environ.get("JOBTRACKER_LABEL_PREFIX"), prefs_text)
+    print(f"JobTracker setup check ({'APPLY' if a.apply else 'dry run'}), label prefix '{prefix}'\n")
+    check_environment(a.apply)
+    prefs_text = check_preferences(prefs_text, a.apply)
     pref = gmail_enabled_from_preferences(prefs_text)
     files = os.path.exists(os.path.join(ROOT, ".gmail-token.json")) or os.path.exists(os.path.join(ROOT, "gmail_credentials.json"))
     run, why = want_gmail(a.gmail, a.no_gmail, pref, files)
@@ -262,11 +298,38 @@ def main():
                 sys.exit(f"unknown label key(s): {', '.join(bad_keys)}; valid: {', '.join(LABEL_SUFFIX)}")
         else:
             keys = wanted_label_keys(prefs_text)
-        check_gmail(a.prefix, a.apply, keys)
+        check_gmail(prefix, a.apply, keys)
     bad = [r for r in results if r[0] == "FAIL"]
     todo = [r for r in results if r[0] == "TODO"]
     print(f"\n{len([r for r in results if r[0] in ('OK','DONE')])} ok, {len(todo)} to do, {len(bad)} failed")
     sys.exit(1 if bad else 0)
+
+
+def check_preferences(prefs_text, apply):
+    """Report on data/routine-preferences.md: format migrations, then unanswered (new) questions. Returns the (possibly migrated) text."""
+    if prefs_text is None:
+        report("INFO", "preferences", "not saved yet; the first-time-setup skill asks and saves them")
+        return ""
+    try:
+        template = open(os.path.join(ROOT, PREFS_TEMPLATE), encoding="utf-8").read()
+        migrations = json.load(open(os.path.join(ROOT, MIGRATIONS_PATH), encoding="utf-8"))
+    except (OSError, ValueError):
+        return prefs_text
+    mine, theirs = preferences_version(prefs_text), preferences_version(template)
+    if mine < theirs:
+        new_text, actions = migrate_preferences(prefs_text, migrations, theirs)
+        detail = f"format v{mine} -> v{theirs}: " + ("; ".join(actions) if actions else "no key changes")
+        if apply:
+            path = os.path.join(ROOT, PREFS_PATH)
+            open(path + f".bak-v{mine}", "w", encoding="utf-8").write(prefs_text)
+            open(path, "w", encoding="utf-8").write(new_text)
+            report("DONE", "preferences migrated", detail + f" (copy of the old file: {PREFS_PATH}.bak-v{mine})")
+            prefs_text = new_text
+        else:
+            report("TODO", "preferences need a format migration", detail + " (re-run with --apply; a copy of your file is kept)")
+    todo = unanswered_preferences(template, prefs_text)
+    report("OK" if not todo else "TODO", "preferences answered", "" if not todo else "not answered yet: " + ", ".join(todo) + " (say \"check my setup\" and I ask only these)")
+    return prefs_text
 
 
 if __name__ == "__main__":

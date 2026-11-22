@@ -55,6 +55,22 @@ check("gmail off ignores mail keys", sc.unanswered_preferences(T, "- gmail_enabl
 check("gmail undecided lists the unanswered rest", sc.unanswered_preferences(T, "- job_alerts: leave\n"), ["gmail_enabled", "file_receipts", "new_key"])
 check("existing answers never listed", sc.preference_keys("- a: yes <!-- c -->\n## h\n- b: \n")["a"], "yes")
 
+M = [{"version": 2, "renamed": {"old_key": "new_key"}, "removed": ["gone"]}, {"version": 3, "renamed": {"new_key": "newer_key"}}]
+old = "# my notes\n## Setup\n- gmail_enabled: yes\n- old_key: trash-all  <!-- c -->\n- gone: yes\n"
+check("version defaults to 1", sc.preferences_version(old), 1)
+check("pending", [m["version"] for m in sc.pending_migrations(M, 1, 2)], [2])
+new, acts = sc.migrate_preferences(old, M, 3)
+check("rename chain keeps value", "- newer_key: trash-all  <!-- c -->" in new and "old_key" not in new, True)
+check("version recorded", sc.preferences_version(new), 3)
+check("notes kept", new.startswith("# my notes"), True)
+check("removed key reported not deleted", ("- gone: yes" in new, any("gone" in a for a in acts)), (True, True))
+again, acts2 = sc.migrate_preferences(new, M, 3)
+check("idempotent", (again, acts2), (new, []))
+check("rename never overwrites an existing new key", "old_key" in sc.migrate_preferences("- old_key: a\n- new_key: b\n", M[:1], 2)[0], True)
+check("prefix: cli wins", sc.resolve_prefix("A", "B", "- label_prefix: C\n"), "A")
+check("prefix: env then saved", (sc.resolve_prefix(None, "B", "- label_prefix: C\n"), sc.resolve_prefix(None, None, "- label_prefix: C\n")), ("B", "C"))
+check("prefix: unset falls to default", sc.resolve_prefix(None, None, "- label_prefix: (not set)\n"), "JobApplications")
+
 class _Req:
     def __init__(s, log, body): s.log, s.body = log, body
     def execute(s): s.log.append(s.body["name"]); return {}

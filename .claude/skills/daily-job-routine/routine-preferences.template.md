@@ -4,14 +4,16 @@
      first run from your answers. Edit freely, or say "change my routine preferences". Anything not set here is left alone. -->
 
 ## Setup
+- preferences_version: 1          <!-- format version of this file; managed by the update tooling, do not edit -->
 - gmail_enabled: (not set)         <!-- use the Gmail features at all: yes | no -->
+- label_prefix: (not set)          <!-- parent Gmail label, e.g. JobApplications; skills substitute it for the default name in their text -->
 
 ## Mail handling
 <!-- "trash" always means Gmail's Trash (an undo log is written, mail stays recoverable ~30 days). Nothing is deleted permanently. -->
 
 - job_alerts: (not set)            <!-- job-board suggestions/alerts (LinkedIn, Indeed, StepStone, Glassdoor, XING ...): leave | trash -->
 - job_alerts_report_roles: (not set) <!-- only if job_alerts is trash: list roles seen in the alerts before trashing? yes | no -->
-- company_job_letters: (not set)   <!-- job-agent letters from employers' career sites: leave | ask-each-run | trash-all | trash-unless-matching-role -->
+- company_job_letters: (not set)   <!-- job-agent letters from employers' career sites: leave | ask-each-run | trash-all | trash-unless-matching-role (your own role keywords live in data/role_keywords.json) -->
 - stale_profile_mails: (not set)   <!-- "your profile will be deleted / keep my data?" mails: leave | trash -->
 - low_value_notices: (not set)     <!-- "your application was viewed", "selection is delayed" mails: leave | trash -->
 
