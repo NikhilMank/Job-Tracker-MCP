@@ -132,7 +132,7 @@ only mention a count. Always dry run, show WOULD TRASH / KEPT, then `--apply`. R
 - **Company job-agent letters** (`company_job_letters`; SuccessFactors/jobs2web-style mailers): `scan_company_jobletters.py --out <scratch>/cjl`.
   `leave` -> do not run it. `ask-each-run` -> run it read-only, report, trash only when the user says so this time (a past yes does not
   carry over). `trash-all` -> `--trash`. `trash-unless-matching-role` -> `--trash-no-ai`: trashes only letters **without** a matching role
-  and prints the others. The role matching (`gmail-job-inbox-triage/scripts/ai_roles.py`, `CORE` / `NONFT`) is tuned for AI/ML roles;
+  and prints the others. The role matching (`gmail-job-inbox-triage/scripts/ai_roles.py`; the user's own words go in git-ignored `data/role_keywords.json`, never in the tracked file, see that file's header; defaults `CORE` / `NONFT`) is tuned for AI/ML roles;
   edit those lists for another field before using this option. Run `--since all` first if this is the first run with a new rule.
 - **Notices** (`low_value_notices`): "application viewed by X" notices and status-delay mails ("selection is delayed") from a company whose
   confirmation is already filed: `trash` -> trash them (search `<company> label:<receipts label>` first); `leave` -> skip.

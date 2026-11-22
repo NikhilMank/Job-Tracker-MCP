@@ -182,6 +182,7 @@ python scripts/setup_check.py           # health check; also lists any new, unan
 Then restart Claude Code (or run `/mcp`) so the servers load the new code, and say *"check my setup"* to answer any new preference questions.
 
 - **Cloned before the daily file became private?** Older clones tracked `data/todays_jobs.md`, so the first update needs a small extra step: `cp data/todays_jobs.md data/todays_jobs.keep`, then `git checkout -- data/todays_jobs.md`, then the usual stash / `git pull --ff-only` / stash pop, then `mv data/todays_jobs.keep data/todays_jobs.md`. Easier: ask Claude to update; the `update-jobtracker` skill does exactly this.
+- **Will an update change my choices?** No. Your answers are in `data/routine-preferences.md`; skills only read them. If a later version renames a preference, `python scripts/setup_check.py --apply` carries your answer over (and keeps a `.bak` copy). Your own role keywords for job-letter filtering go in `data/role_keywords.json` (`{"core": [...], "related": [...], "exclude": [...]}`), not in the tracked `ai_roles.py`.
 - **You edited tracked files** (for example `triage_rules.py`)? `git pull` may refuse. Run `git stash`, then `git pull --ff-only`, then `git stash pop`, and fix any conflict it reports (Claude can help). Do **not** use `git reset --hard`, `git checkout .` or `git clean`: those throw your edits away.
 - **You downloaded a ZIP** instead of cloning? Updating needs git. Clone the repo into a new folder, then copy `jobtracker.db`, `backups/`, `data/`, `gmail_credentials.json`, `.gmail-token.json` and `.claude/settings.local.json` from the old folder into the new one.
 - **You forked the repo?** Add this repository once as `upstream` (`git remote add upstream https://github.com/NikhilMank/Job-Tracker-MCP.git`), then `git fetch upstream` and `git merge upstream/main`.
@@ -266,7 +267,7 @@ The `first-time-setup` skill creates the labels you choose (or run `python scrip
 
 **Nothing is deleted or moved by default.** The first time you run the daily routine, Claude asks what to do with each kind of mail (job-board alerts, employer job letters, "keep my data" mails, receipts, rejections) and saves your answers in `data/routine-preferences.md` (git-ignored). Say *"change my routine preferences"* to edit them. Trash always means Gmail's Trash with an undo log, never a permanent delete.
 
-Scripts that change anything (database, Gmail labels) default to a dry run and need `--apply`. The classifiers favour precision: when unsure, a mail stays in the inbox. Their sender and phrase lists are tuned for English and German mail. Edit the rules in `.claude/skills/gmail-job-inbox-triage/scripts/triage_rules.py` for your own market.
+Scripts that change anything (database, Gmail labels) default to a dry run and need `--apply`. The classifiers favour precision: when unsure, a mail stays in the inbox. Their sender and phrase lists are tuned for English and German mail. For another field than AI/ML, put your role words in `data/role_keywords.json` (git-ignored, survives updates). To change the sender/phrase rules themselves, edit `.claude/skills/gmail-job-inbox-triage/scripts/triage_rules.py` (a tracked file: see "Updating" above for keeping such edits).
 
 ## Tests
 

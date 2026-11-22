@@ -41,7 +41,7 @@ missing). It asks the user about every choice; it never decides what to delete o
    - a label for offers (`label_accepted`)
    Save each answer as `yes`/`no` in `data/routine-preferences.md` (from the template, merge with existing content).
    - If anything is `yes`, ask for the parent label name (default `JobApplications`). If they pick another, it must be set for every
-     script: with their approval add it to `.claude/settings.local.json` (git-ignored) as `{"env": {"JOBTRACKER_LABEL_PREFIX": "<name>"}}`,
+     script: with their approval add it to `.claude/settings.local.json` (git-ignored; also save it as `label_prefix` in `data/routine-preferences.md` so it survives and `setup_check.py` finds it) as `{"env": {"JOBTRACKER_LABEL_PREFIX": "<name>"}}`,
      merging with any existing content, and tell them to restart Claude Code. Until restarted, pass `--prefix <name>` yourself.
    - Also ask for their own name or email domain (so their own sent mail is never mistaken for a rejection) and, with approval, add
      `JOBTRACKER_USER_HINTS` (comma separated, e.g. `jane,jane-doe.com`) to the same `env` block. Optional: they may skip it.

@@ -14,6 +14,16 @@ preferences, daily file, drafts, logs), `gmail_credentials.json`, `.gmail-token.
 Only **tracked** files can change or conflict: the code, the skills, `.mcp.json`, `.claude/settings.json`, `CLAUDE.md`, docs.
 Personal settings therefore belong in the ignored files (`data/...`, `.claude/settings.local.json`), not in tracked ones.
 
+## What lives where (so updates never overwrite a choice)
+- Choices from setup: `data/routine-preferences.md` (answers, `label_prefix`, `preferences_version`) and `.claude/settings.local.json`. Both ignored.
+- Role keywords for job-letter filtering: `data/role_keywords.json` (ignored, optional; see `ai_roles.py`). The tracked defaults are used when absent.
+- Skill files are instructions only. They carry **no** user choices: they read the preferences file, and when a skill text mentions
+  the default label name `JobApplications`, substitute the user's `label_prefix`. So a skill update replaces wording and logic while
+  the user's answers stay untouched. If a user hand-edited a skill file, treat it like any local edit (stash path below) and offer to
+  move that customisation into the preferences file or `data/` instead.
+- New or renamed preference keys: `preferences-migrations.json` lists renames/removals per format version. `setup_check.py --apply`
+  migrates the user's file (keeps every value, saves `routine-preferences.md.bak-v<N>`); without `--apply` it only reports.
+
 ## Steps
 1. **Check the situation (read-only).** `git rev-parse --is-inside-work-tree`, `git remote -v`, `git branch --show-current`,
    `git status --short`, `git rev-parse --short HEAD` (remember it: the "before" version).
@@ -46,6 +56,7 @@ Personal settings therefore belong in the ignored files (`data/...`, `.claude/se
 6. **After the update.**
    - If dependencies changed: `.venv/bin/pip install -r requirements.txt`.
    - Run `.venv/bin/python scripts/setup_check.py` and the project's test scripts (see README, Tests); report failures honestly.
+   - `.venv/bin/python scripts/setup_check.py` reports a preferences format migration when one is due: show what it would change, ask, then re-run with `--apply`.
    - **New preference questions:** `setup_check.py` lists preferences that are unanswered, which after an update are the new ones. Ask
      only those (as in `first-time-setup` steps 5-6) and save them into the existing `data/routine-preferences.md`. Never change or
      re-ask answers the user already gave.
