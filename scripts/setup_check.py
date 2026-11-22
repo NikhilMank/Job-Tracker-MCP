@@ -5,12 +5,17 @@
   .venv/bin/python scripts/setup_check.py --prefix Jobs2026        # check labels under another parent label
   .venv/bin/python scripts/setup_check.py --no-gmail               # tracker only
   .venv/bin/python scripts/setup_check.py --gmail                  # force the Gmail checks (after the user said yes)
-  .venv/bin/python scripts/setup_check.py --apply                  # also create the missing Gmail labels (and data/)
+  .venv/bin/python scripts/setup_check.py --labels rejected,shortlisted --apply   # create exactly these labels (and data/)
+  .venv/bin/python scripts/setup_check.py --labels all             # check every label this project can use
 
 Checks: Python and FastMCP versions, installed packages, project MCP config, writable data folder, .gitignore
 coverage of private files, and the Gmail credentials, token scopes and label structure. Gmail is optional: by default
 the Gmail checks run only if the user wants Gmail (`gmail_enabled: yes` in data/routine-preferences.md) or, when that is
 not decided yet, if Gmail files already exist. `gmail_enabled: no` skips them silently.
+
+Labels are opt-in too: each one belongs to a feature, and only the labels the user chose are checked or created. The choice
+comes from data/routine-preferences.md (file_receipts, file_rejections, label_easyapply, label_shortlisted,
+label_needs_attention, label_attended, label_accepted) or from --labels. No choice yet means no label is touched.
 Never prints credentials, tokens or mail. Creating labels never touches existing mail. Exit code 1 if any check FAILs.
 """
 import argparse, importlib.metadata as md, importlib.util, json, os, sys
@@ -21,19 +26,36 @@ REQUIRED_SCOPES = [
     "https://www.googleapis.com/auth/gmail.send",
     "https://www.googleapis.com/auth/gmail.modify",
 ]
-CHILD_LABELS = ["Rejected", "EasyApply", "Shortlisted", "NeedsAttention", "Attended"]
-OPTIONAL_CHILD_LABELS = ["Accepted"]
+# label key -> suffix under the parent label ("" = the parent itself, used for filed application receipts)
+LABEL_SUFFIX = {"receipts": "", "rejected": "/Rejected", "easyapply": "/EasyApply", "shortlisted": "/Shortlisted",
+                "needs_attention": "/NeedsAttention", "attended": "/Attended", "accepted": "/Accepted"}
+# preference key (data/routine-preferences.md) -> label it needs
+LABEL_PREFS = {"file_receipts": "receipts", "file_rejections": "rejected", "label_easyapply": "easyapply",
+               "label_shortlisted": "shortlisted", "label_needs_attention": "needs_attention",
+               "label_attended": "attended", "label_accepted": "accepted"}
 GITIGNORE_NEEDS = ["*.db", "data/*", ".gmail-token.json", "gmail_credentials.json"]
 
 
-def gmail_enabled_from_preferences(text):
-    """True / False from a `- gmail_enabled: yes|no` line in data/routine-preferences.md, None if absent or '(not set)'."""
+def preference(text, key):
+    """True / False from a `- key: yes|no` line in data/routine-preferences.md, None if absent or '(not set)'."""
     for line in (text or "").splitlines():
         line = line.split("<!--")[0].strip().lstrip("-").strip().lower()
-        if line.startswith("gmail_enabled:"):
+        if line.startswith(key + ":"):
             v = line.split(":", 1)[1].strip()
             return True if v.startswith("yes") else False if v.startswith("no") else None
     return None
+
+
+def gmail_enabled_from_preferences(text):
+    return preference(text, "gmail_enabled")
+
+
+def wanted_label_keys(text):
+    """Label keys the user chose, in LABEL_SUFFIX order. None if they have not answered any label question yet."""
+    answers = {k: preference(text, p) for p, k in LABEL_PREFS.items()}
+    if all(v is None for v in answers.values()):
+        return None
+    return [k for k in LABEL_SUFFIX if answers.get(k)]
 
 
 def want_gmail(flag_gmail, flag_no_gmail, preference, files_exist):
@@ -49,15 +71,18 @@ def want_gmail(flag_gmail, flag_no_gmail, preference, files_exist):
     return False, "not set up and not asked yet; it is optional (the first-time-setup skill asks)"
 
 
-def required_labels(prefix, with_optional=False):
-    """Parent first (Gmail nests by name, create the parent before its children)."""
-    kids = CHILD_LABELS + (OPTIONAL_CHILD_LABELS if with_optional else [])
-    return [prefix] + [f"{prefix}/{k}" for k in kids]
+def required_labels(prefix, keys):
+    """Label names for the chosen keys, parent first (Gmail nests by name; create the parent before its children).
+    Choosing any label creates the parent; nothing chosen means nothing is required."""
+    keys = [k for k in LABEL_SUFFIX if k in set(keys or [])]
+    if not keys:
+        return []
+    return [prefix] + [prefix + LABEL_SUFFIX[k] for k in keys if k != "receipts"]
 
 
-def missing_labels(existing_names, prefix, with_optional=False):
+def missing_labels(existing_names, prefix, keys):
     have = {n.lower() for n in existing_names}
-    return [n for n in required_labels(prefix, with_optional) if n.lower() not in have]
+    return [n for n in required_labels(prefix, keys) if n.lower() not in have]
 
 
 def missing_scopes(token_scopes):
@@ -139,7 +164,7 @@ def gmail_service():
     return build("gmail", "v1", credentials=creds)
 
 
-def check_gmail(prefix, apply, with_optional):
+def check_gmail(prefix, apply, keys):
     cred = os.path.join(ROOT, "gmail_credentials.json")
     tok = os.path.join(ROOT, ".gmail-token.json")
     report("OK" if os.path.exists(cred) else "TODO", "gmail_credentials.json (Google OAuth client)", "" if os.path.exists(cred) else "README, Setup > B, steps 1-4")
@@ -161,8 +186,14 @@ def check_gmail(prefix, apply, with_optional):
     except Exception as e:  # network, expired token, API disabled
         report("FAIL", "Gmail API reachable", f"{type(e).__name__}: {str(e)[:120]} (token expired? run --auth again)"); return
     report("OK", "Gmail API reachable")
-    miss = missing_labels(existing, prefix, with_optional)
-    have = [n for n in required_labels(prefix, with_optional) if n not in miss]
+    if keys is None:
+        report("INFO", "labels", "not chosen yet; each label is optional (the first-time-setup skill asks which you want)")
+        return
+    if not keys:
+        report("INFO", "labels", "you chose none: nothing to create")
+        return
+    miss = missing_labels(existing, prefix, keys)
+    have = [n for n in required_labels(prefix, keys) if n not in miss]
     report("OK" if not miss else "TODO", f"labels under '{prefix}'", f"{len(have)} present" + (f", missing: {', '.join(miss)}" if miss else ""))
     if miss and apply:
         done = create_labels(svc, miss)
@@ -176,22 +207,30 @@ def main():
     ap.add_argument("--prefix", default=os.environ.get("JOBTRACKER_LABEL_PREFIX", "JobApplications"), help="parent Gmail label")
     ap.add_argument("--no-gmail", action="store_true", help="skip the Gmail checks")
     ap.add_argument("--gmail", action="store_true", help="run the Gmail checks even if no preference is saved")
-    ap.add_argument("--with-optional", action="store_true", help="also the optional 'Accepted' label")
+    ap.add_argument("--labels", help="comma separated label keys to check/create, or 'all' (default: your saved choice). Keys: " + ", ".join(LABEL_SUFFIX))
     ap.add_argument("--apply", action="store_true", help="create missing labels / data folder")
     a = ap.parse_args()
     print(f"JobTracker setup check ({'APPLY' if a.apply else 'dry run'}), label prefix '{a.prefix}'\n")
     check_environment(a.apply)
     try:
-        pref = gmail_enabled_from_preferences(open(os.path.join(ROOT, "data", "routine-preferences.md")).read())
+        prefs_text = open(os.path.join(ROOT, "data", "routine-preferences.md")).read()
     except OSError:
-        pref = None
+        prefs_text = ""
+    pref = gmail_enabled_from_preferences(prefs_text)
     files = os.path.exists(os.path.join(ROOT, ".gmail-token.json")) or os.path.exists(os.path.join(ROOT, "gmail_credentials.json"))
     run, why = want_gmail(a.gmail, a.no_gmail, pref, files)
     if not run:
         report("INFO", "Gmail", why)
     else:
         print()
-        check_gmail(a.prefix, a.apply, a.with_optional)
+        if a.labels:
+            keys = list(LABEL_SUFFIX) if a.labels.strip() == "all" else [k.strip() for k in a.labels.split(",") if k.strip()]
+            bad_keys = [k for k in keys if k not in LABEL_SUFFIX]
+            if bad_keys:
+                sys.exit(f"unknown label key(s): {', '.join(bad_keys)}; valid: {', '.join(LABEL_SUFFIX)}")
+        else:
+            keys = wanted_label_keys(prefs_text)
+        check_gmail(a.prefix, a.apply, keys)
     bad = [r for r in results if r[0] == "FAIL"]
     todo = [r for r in results if r[0] == "TODO"]
     print(f"\n{len([r for r in results if r[0] in ('OK','DONE')])} ok, {len(todo)} to do, {len(bad)} failed")
