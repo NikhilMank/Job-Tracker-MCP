@@ -5,6 +5,9 @@ description: Diagnose and fix the local MCP servers in this project (jobtracker,
 
 # MCP server & Gmail troubleshooting (WSL2)
 
+> **Label names:** this text writes the default parent label `JobApplications`. If the user chose another name it is saved as `label_prefix` in
+> `data/routine-preferences.md` (or set via `JOBTRACKER_LABEL_PREFIX`); use that name wherever `JobApplications` appears. The scripts here already do.
+
 ## 1. `claude mcp list` shows "Connected · tools fetch failed — Request timed out"
 Cause is almost always **FastMCP 4.x**.
 - `.venv/bin/python -c "import fastmcp; print(fastmcp.__version__)"` → must be `3.x`.

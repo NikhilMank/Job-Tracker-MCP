@@ -7,13 +7,16 @@ Dry run unless --apply. Writes an undo log compatible with gmail-file-rejections
   .venv/bin/python mark_shortlisted.py --ids ids.json --apply
   ... --no-star      only the label
 """
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", "..")))
+import jobtracker_config as _cfg  # saved label_prefix
 import argparse, json, os, time
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
-LABEL = os.environ.get("JOBTRACKER_LABEL_PREFIX", "JobApplications") + "/Shortlisted"
+LABEL = _cfg.label_prefix() + "/Shortlisted"
 ap = argparse.ArgumentParser()
 ap.add_argument("--ids", required=True)
 ap.add_argument("--apply", action="store_true")

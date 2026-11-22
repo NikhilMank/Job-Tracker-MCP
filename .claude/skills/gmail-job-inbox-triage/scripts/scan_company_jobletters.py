@@ -10,6 +10,9 @@ keywords. The letter preamble is removed first, because it repeats the user's OW
 Luxembourg") and would otherwise create false hits. Output: company -> role titles (first/last seen).
 State (task "company_jobletters" in data/job_mail_state.json) is committed with --commit after the user has seen the report.
 """
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", "..")))
+import jobtracker_config as _cfg  # saved label_prefix
 import argparse, collections, json, os, re, subprocess, sys, time
 from email.utils import parsedate_to_datetime
 
@@ -32,7 +35,7 @@ args = ap.parse_args()
 since, started = since_query(TASK, default_days=120, mode=args.since)
 q = ('(from:jobnotification OR from:jobabo OR from:jobs2web OR subject:"new jobs posted" OR subject:"Neue Stellen" OR subject:"New jobs available" '
      'OR subject:"neue, spannende Stellen" OR subject:"Neue von jobs" OR subject:"veröffentlichte Stellen" OR subject:"Job Alert Notification") '
-     f'-in:sent -in:trash -label:{os.environ.get("JOBTRACKER_LABEL_PREFIX", "JobApplications").lower()} {since}').strip()
+     f'-in:sent -in:trash -label:{_cfg.label_prefix().lower()} {since}').strip()
 if not args.no_fetch:
     subprocess.run([sys.executable, os.path.join(HERE, "..", "..", "jobtracker-gmail-sync", "scripts", "fetch_gmail_label.py"),
                     "--query", q, "--body-chars", "12000", "--max", "800", "--out", args.out], check=True, stdout=subprocess.DEVNULL)

@@ -5,6 +5,9 @@ description: Find recent job-rejection emails in the Gmail inbox and file them i
 
 # File new rejection emails into `JobApplications/Rejected`
 
+> **Label names:** this text writes the default parent label `JobApplications`. If the user chose another name it is saved as `label_prefix` in
+> `data/routine-preferences.md` (or set via `JOBTRACKER_LABEL_PREFIX`); use that name wherever `JobApplications` appears. The scripts here already do.
+
 ## Principle: precision over recall
 **A false positive is dangerous, a false negative is fine.** Filing a non-rejection (an interview invite, an offer,
 a request to act) out of the inbox can make the user miss it; a rejection that stays in the inbox costs nothing.

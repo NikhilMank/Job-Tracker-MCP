@@ -22,6 +22,9 @@ Buckets (precision first -- nothing is ever moved by this script):
   (everything else -- marketing, platform alerts, private mail -- is not listed)
 Writes <out>/plan.json and ids files: rejected.json, confirm.json, confirm_easy.json (candidate lists, to be approved).
 """
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", "..")))
+import jobtracker_config as _cfg  # saved label_prefix
 import argparse, json, os, re, subprocess, sys, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -34,7 +37,7 @@ ap.add_argument("--since", default="auto", help="auto = only mail newer than the
 ap.add_argument("--out", required=True)
 ap.add_argument("--no-fetch", action="store_true")
 ap.add_argument("--commit", action="store_true", help="save the run time + unresolved ids (do this AFTER reporting to the user)")
-ap.add_argument("--parent", default=os.environ.get("JOBTRACKER_LABEL_PREFIX", "JobApplications"))
+ap.add_argument("--parent", default=_cfg.label_prefix())
 ap.add_argument("--max", type=int, default=800)
 args = ap.parse_args()
 os.makedirs(args.out, exist_ok=True)

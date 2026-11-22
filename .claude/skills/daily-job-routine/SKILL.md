@@ -5,6 +5,9 @@ description: One-shot daily job routine - add today's applied jobs to jobtracker
 
 # Daily job routine
 
+> **Label names:** this text writes the default parent label `JobApplications`. If the user chose another name it is saved as `label_prefix` in
+> `data/routine-preferences.md` (or set via `JOBTRACKER_LABEL_PREFIX`); use that name wherever `JobApplications` appears. The scripts here already do.
+
 Runs the jobs below in one pass. It reuses the existing skills; this file only fixes the order, the permissions and the report.
 Nothing here runs on a schedule - only when the user asks.
 

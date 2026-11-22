@@ -16,6 +16,9 @@ can be reverted -- moving hides mail from the inbox, so it must always be revers
 Needs the gmail.modify scope; otherwise the API answers 403 "insufficient authentication scopes"
 (see gmail-mcp-troubleshooting).
 """
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", "..")))
+import jobtracker_config as _cfg  # saved label_prefix
 import argparse, collections, json, os, time
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -23,7 +26,7 @@ from googleapiclient.discovery import build
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--ids")
-ap.add_argument("--to", default=os.environ.get("JOBTRACKER_LABEL_PREFIX", "JobApplications") + "/Rejected")
+ap.add_argument("--to", default=_cfg.label_prefix() + "/Rejected")
 ap.add_argument("--also-add", action="append", default=[], help="extra labels to add (e.g. JobApplications/EasyApply)")
 ap.add_argument("--remove", action="append", default=None, help="labels to remove (default: INBOX + parent of --to)")
 ap.add_argument("--token", default=".gmail-token.json")

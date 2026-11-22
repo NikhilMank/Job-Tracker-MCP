@@ -5,6 +5,9 @@ description: Update job tracker statuses (rejected / interviewing / offer) from 
 
 # Sync job tracker statuses from Gmail
 
+> **Label names:** this text writes the default parent label `JobApplications`. If the user chose another name it is saved as `label_prefix` in
+> `data/routine-preferences.md` (or set via `JOBTRACKER_LABEL_PREFIX`); use that name wherever `JobApplications` appears. The scripts here already do.
+
 A previous keyword-based run marked 30 jobs "offer" from job-alert digests and bootcamp
 marketing mail, and 9 as "interviewing" from plain application confirmations. This skill
 exists to make that impossible. **Precision beats coverage: a wrongly rejected live application

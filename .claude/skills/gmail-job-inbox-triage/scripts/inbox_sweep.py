@@ -2,6 +2,9 @@
 
     .venv/bin/python .claude/skills/gmail-job-inbox-triage/scripts/inbox_sweep.py [--days 21] [--hide-noise]
 """
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", "..")))
+import jobtracker_config as _cfg  # saved label_prefix
 import argparse, os, re
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 from google.oauth2.credentials import Credentials
@@ -11,7 +14,7 @@ ap = argparse.ArgumentParser(); ap.add_argument("--days", type=int, default=21);
 a = ap.parse_args()
 NOISE = re.compile(os.environ.get("JOBTRACKER_SWEEP_NOISE", r"newsletter|no-?reply@.*(shop|store)|unsubscribe"), re.I)  # --hide-noise filter; override via env
 g = build("gmail", "v1", credentials=Credentials.from_authorized_user_file(os.path.join(ROOT, ".gmail-token.json")))
-LABEL_PREFIX = os.environ.get("JOBTRACKER_LABEL_PREFIX", "JobApplications")
+LABEL_PREFIX = _cfg.label_prefix()
 NA_ID = next((l["id"] for l in g.users().labels().list(userId="me").execute()["labels"] if l["name"].lower() == (LABEL_PREFIX + "/NeedsAttention").lower()), None)
 ids, tok = [], None
 while True:

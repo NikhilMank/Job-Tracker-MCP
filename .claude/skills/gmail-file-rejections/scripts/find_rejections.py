@@ -17,6 +17,9 @@ Verdicts
   (everything else is not printed unless --all; it is confirmations, invitations, newsletters, ...)
 Workday daily digests can contain a complete rejection letter: the classifier reads them like any mail.
 """
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", "..")))
+import jobtracker_config as _cfg  # saved label_prefix
 import argparse, json, os, re, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -26,7 +29,7 @@ from rejection_classifier import classify  # noqa: E402
 ap = argparse.ArgumentParser()
 ap.add_argument("--days", type=int, default=45)
 ap.add_argument("--out", required=True)
-ap.add_argument("--label", default=os.environ.get("JOBTRACKER_LABEL_PREFIX", "JobApplications") + "/Rejected")
+ap.add_argument("--label", default=_cfg.label_prefix() + "/Rejected")
 ap.add_argument("--extra", default="", help="extra Gmail query terms")
 ap.add_argument("--all", action="store_true", help="also print non-rejections")
 ap.add_argument("--max", type=int, default=800)

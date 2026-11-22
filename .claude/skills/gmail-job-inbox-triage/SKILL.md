@@ -5,6 +5,9 @@ description: End-to-end maintenance of the job-related Gmail inbox - optionally 
 
 # Job inbox maintenance (suggestions + company letters + triage)
 
+> **Label names:** this text writes the default parent label `JobApplications`. If the user chose another name it is saved as `label_prefix` in
+> `data/routine-preferences.md` (or set via `JOBTRACKER_LABEL_PREFIX`); use that name wherever `JobApplications` appears. The scripts here already do.
+
 One routine for the whole job inbox. The single-purpose skills still work on their own: `gmail-file-applications` (receipts),
 `gmail-file-rejections` (rejections). All of them share one principle.
 

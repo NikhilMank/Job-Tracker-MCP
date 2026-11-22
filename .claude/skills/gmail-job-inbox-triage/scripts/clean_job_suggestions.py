@@ -13,6 +13,9 @@ with its category so the user can decide (e.g. LinkedIn group digests, XING "Ken
 Undo: .venv/bin/python clean_job_suggestions.py --undo data/trashed_emails_log/<file>.json
 State (data/job_mail_state.json, task "job_suggestions"): only mail newer than the last completed run is read next time.
 """
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "..", "..")))
+import jobtracker_config as _cfg  # saved label_prefix
 import argparse, collections, json, os, re, subprocess, sys, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -94,7 +97,7 @@ since, started = since_query(TASK, default_days=60, mode=args.since)
 if args.no_fetch:
     # With --no-fetch the mail was read earlier: the watermark must be the time that download STARTED, never "now".
     started = int(os.path.getmtime(os.path.join(args.out, "emails.json"))) - 7200  # conservative: 2 h before the last write
-LABEL_Q = os.environ.get("JOBTRACKER_LABEL_PREFIX", "JobApplications").lower()
+LABEL_Q = _cfg.label_prefix().lower()
 query = f"{senders} -in:sent -in:trash -label:{LABEL_Q} -label:{LABEL_Q}-rejected {since}".strip()
 if not args.no_fetch:
     subprocess.run([sys.executable, os.path.join(HERE, "..", "..", "jobtracker-gmail-sync", "scripts", "fetch_gmail_label.py"),

@@ -5,6 +5,9 @@ description: File job-application confirmation emails ("we received your applica
 
 # File application confirmations into `JobApplications`
 
+> **Label names:** this text writes the default parent label `JobApplications`. If the user chose another name it is saved as `label_prefix` in
+> `data/routine-preferences.md` (or set via `JOBTRACKER_LABEL_PREFIX`); use that name wherever `JobApplications` appears. The scripts here already do.
+
 ## Convention (verified on the user's mailbox)
 - Plain confirmation → label **`JobApplications`** only, **no Inbox**. There is no `JobApplications/Applied`
   label — the user once said so by mistake; the parent label *is* the "applied" folder.
