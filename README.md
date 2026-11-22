@@ -8,6 +8,17 @@ Track your job search from Claude Code. Two local [MCP](https://modelcontextprot
 
 Everything runs on your machine; your data stays in `jobtracker.db` and your own Gmail account.
 
+## Quick start
+
+```bash
+git clone https://github.com/NikhilMank/Job-Tracker-MCP.git && cd Job-Tracker-MCP
+python3.12 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt && crawl4ai-setup
+claude            # approve the project servers, then check /mcp
+```
+
+New to this? Follow the numbered [Setup](#setup) below. Gmail is optional and has its own step-by-step guide (including the Google Cloud part).
+
 ## Tools
 
 | Server | Tools |
@@ -19,33 +30,132 @@ Job statuses: `new`, `applied`, `interviewing`, `offer`, `rejected`, `archived`.
 
 ## Setup
 
-Requires Python 3.12+.
+Two parts: **A. the job tracker** (about 10 minutes, everything you need to save and score jobs) and **B. Gmail** (optional, about 15 minutes, only for the inbox-filing skills). Do A first and ignore B until you want it.
+
+### Before you start
+
+| You need | Check with | Notes |
+|---|---|---|
+| [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) | `claude --version` | sign in with your own account |
+| Python **3.12 or newer** | `python3 --version` | macOS ships an older one: `brew install python@3.12`. Ubuntu/Debian: `sudo apt install python3.12 python3.12-venv` |
+| git | `git --version` | |
+| Windows | use **WSL2** (Ubuntu) and run everything inside it | the config uses `.venv/bin/python`, which does not exist on native Windows |
+
+### A. Set up the job tracker
+
+**1. Get the code**
 
 ```bash
-python -m venv .venv
+git clone https://github.com/NikhilMank/Job-Tracker-MCP.git
+cd Job-Tracker-MCP
+```
+
+**2. Create the Python environment and install**
+
+```bash
+python3.12 -m venv .venv          # use python3 if that is already 3.12+
 source .venv/bin/activate
 pip install -r requirements.txt
-crawl4ai-setup            # installs the Playwright browser
 ```
 
-Register the servers (this repo ships a project-scoped `.mcp.json`, so just start Claude Code in this folder). To register them elsewhere, use the venv interpreter directly:
+**3. Install the browser used for scraping** (large download, a few hundred MB; skip it if you will only paste job descriptions):
 
 ```bash
-claude mcp add jobtracker -s project -- .venv/bin/python main.py
-claude mcp add gmail -s project -- .venv/bin/python gmail_mcp.py
+crawl4ai-setup
 ```
 
-`claude_desktop_config.example.json` shows the same for Claude Desktop (use absolute paths).
+**4. Start Claude Code in this folder**
 
-> **Do not use `uv run` to launch the servers and keep `fastmcp>=3.4.7,<4`.** Claude Code speaks MCP protocol `2024-11-05`; FastMCP 4.x does not, and the servers show "tools fetch failed / request timed out". Heavy libraries are imported lazily so the servers start in under a second; keep it that way.
+```bash
+claude
+```
 
-### Gmail (optional)
+The repo ships a project config (`.mcp.json`), so the servers register themselves. Claude Code asks you to approve the project servers the first time: choose to approve `jobtracker` (and `gmail` if you plan to use Part B).
 
-1. In Google Cloud Console create a project, enable the **Gmail API**, configure the OAuth consent screen (add your address as a test user) and create an **OAuth client ID** of type *Desktop app*.
-2. Save the downloaded JSON as `gmail_credentials.json` in this folder.
-3. Run `.venv/bin/python gmail_mcp.py --auth` and approve access. This writes `.gmail-token.json`.
+**5. Check that it works**
 
-Both files are git-ignored. Never commit them. Changing the scopes in `gmail_mcp.py` requires deleting the token and authenticating again. If something fails, see the `gmail-mcp-troubleshooting` skill.
+Run `/mcp` inside Claude Code. `jobtracker` must show **connected**. Then try:
+
+> Add this job: https://example.com/jobs/123   *(use a real posting link)*
+> List my jobs.
+
+The first `add_job` is slow (15-30 seconds) because the browser starts then. Your jobs are stored in `jobtracker.db` in this folder.
+
+> If `/mcp` shows `jobtracker` as failed or "tools fetch failed": make sure you launched Claude Code **inside the repo folder**, that `.venv` exists, and that `pip install` finished. More in [Troubleshooting](#troubleshooting).
+
+Done with Part A. Continue with [Getting started](#getting-started) to build your profile, or do Part B first.
+
+> **Do not launch the servers with `uv run`, and keep `fastmcp>=3.4.7,<4`.** Claude Code speaks MCP protocol `2024-11-05`; FastMCP 4.x does not, and the servers show "tools fetch failed / request timed out".
+
+**Other setups:** to register the servers from another folder use the venv interpreter with absolute paths, e.g. `claude mcp add jobtracker -s user -- /abs/path/.venv/bin/python /abs/path/main.py`. `claude_desktop_config.example.json` shows the same for Claude Desktop.
+
+### B. Set up Gmail (optional)
+
+Gmail access needs your own Google Cloud OAuth client: nobody else's app ever sees your mail, and the token stays on your machine. It is free.
+
+**1. Create a Google Cloud project**
+1. Open <https://console.cloud.google.com/> and sign in with the Gmail account you want to use.
+2. Click the project picker at the top, then **New project**. Name it e.g. `jobtracker` and click **Create**. Make sure it is selected afterwards.
+
+**2. Enable the Gmail API**
+1. Menu **APIs & Services > Library** (or search "Gmail API" in the top search bar).
+2. Open **Gmail API** and click **Enable**.
+
+**3. Configure the consent screen** (Google calls this *Google Auth Platform*, older consoles say *OAuth consent screen*)
+1. Menu **APIs & Services > OAuth consent screen**, then **Get started**.
+2. App name: `jobtracker`. User support email: your address. Click **Next**.
+3. Audience: choose **External**. Click **Next**.
+4. Contact email: your address. Accept the policy and click **Create**.
+5. Open **Audience** and, under **Test users**, click **Add users** and add **your own Gmail address**. Without this, sign-in fails with `Error 403: access_denied`.
+
+**4. Create the OAuth client and download it**
+1. Open **Clients** (older consoles: **Credentials > Create credentials > OAuth client ID**) and click **Create client**.
+2. Application type: **Desktop app**. Name: anything. Click **Create**.
+3. Click **Download JSON** on the confirmation dialog.
+4. Move the file into the repo folder and rename it exactly **`gmail_credentials.json`**.
+
+**5. Sign in once**
+
+Run this in a normal terminal (not through Claude), inside the repo folder:
+
+```bash
+source .venv/bin/activate
+python gmail_mcp.py --auth
+```
+
+1. It prints a long URL. Open it in your browser and choose your account.
+2. Google warns that the app is not verified (normal for your own test app): click **Advanced > Go to jobtracker (unsafe)**.
+3. **Tick every permission checkbox** (read, send, modify) and continue. Unticked boxes are silently dropped and later calls fail with "insufficient authentication scopes".
+4. The browser then shows **"localhost refused to connect"**. That is expected. Copy the **full URL from the address bar** (it starts with `http://localhost:8765/?state=...&code=...`), paste it into the terminal and press Enter.
+5. `.gmail-token.json` is created. Keep the terminal open until it says the token was saved; the code in the URL is single-use.
+
+**6. Create the labels the skills use** in Gmail (left sidebar > **+** next to Labels):
+
+`JobApplications`, then nested under it: `JobApplications/Rejected`, `JobApplications/EasyApply`, `JobApplications/Shortlisted`, `JobApplications/NeedsAttention`. To use another prefix set `JOBTRACKER_LABEL_PREFIX` (see [Gmail skills and labels](#gmail-skills-and-labels)).
+
+**7. Reconnect and test.** Restart Claude Code (or run `/mcp`), confirm `gmail` is connected and ask: *"How many emails are in my inbox?"* (`get_gmail_stats`).
+
+Good to know:
+- While the OAuth app is in **Testing** mode, Google expires the token after **7 days**; just run `python gmail_mcp.py --auth` again. To stop that, open **Audience** and set **Publishing status: In production** (it stays "unverified", which is fine for a personal app).
+- `gmail_credentials.json` and `.gmail-token.json` are secrets. They are git-ignored; never commit, share or paste them.
+- Claude Code with the `gmail` server can read, label, move, trash and **send** mail. Skills only do what you approve, but review what Claude proposes.
+- Headless/WSL: if the browser cannot open from the terminal, copy the URL into a browser on your normal desktop; the flow above works unchanged.
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `jobtracker` or `gmail` shows failed / "tools fetch failed / request timed out" | check `.venv/bin/python -c "import fastmcp; print(fastmcp.__version__)"` prints `3.x`; delete stale bytecode `find . -name "*.pyc" -not -path "./.venv/*" -delete`; run `/mcp` to reconnect |
+| `/mcp` does not list the servers | start `claude` from inside the repo folder and approve the project servers when asked |
+| First `add_job` is very slow or errors about a browser | run `crawl4ai-setup`; the first call starts the browser |
+| LinkedIn/StepStone link fails with `HTTP 403 ... robots.txt` | expected: copy the job text and use `add_job_from_text` |
+| `Error 403: access_denied` at Google sign-in | add your address under **Audience > Test users** and confirm the Gmail API is enabled |
+| "Gmail is not authorized" | run `python gmail_mcp.py --auth` (Part B step 5) |
+| "insufficient authentication scopes" | delete `.gmail-token.json`, run `--auth` again and tick **all** checkboxes |
+| Gmail worked, now fails after about a week | Testing-mode token expired: run `--auth` again |
+| "Quota exceeded" | wait a few minutes; the skills batch requests to avoid it |
+
+The `gmail-mcp-troubleshooting` skill covers these and more: ask Claude *"my gmail server fails"*.
 
 ## Usage
 
