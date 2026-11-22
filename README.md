@@ -129,9 +129,9 @@ python gmail_mcp.py --auth
 4. The browser then shows **"localhost refused to connect"**. That is expected. Copy the **full URL from the address bar** (it starts with `http://localhost:8765/?state=...&code=...`), paste it into the terminal and press Enter.
 5. `.gmail-token.json` is created. Keep the terminal open until it says the token was saved; the code in the URL is single-use.
 
-**6. Create the labels the skills use** in Gmail (left sidebar > **+** next to Labels):
+**6. Create the labels the skills use.** The easiest way: start Claude Code and say *"set up my job tracker"*; the `first-time-setup` skill checks everything, creates any missing labels (after asking you), and asks your preferences. Or create them yourself in Gmail (left sidebar > **+** next to Labels), or run `python scripts/setup_check.py --apply`:
 
-`JobApplications`, then nested under it: `JobApplications/Rejected`, `JobApplications/EasyApply`, `JobApplications/Shortlisted`, `JobApplications/NeedsAttention`. To use another prefix set `JOBTRACKER_LABEL_PREFIX` (see [Gmail skills and labels](#gmail-skills-and-labels)).
+`JobApplications`, then nested under it: `JobApplications/Rejected`, `JobApplications/EasyApply`, `JobApplications/Shortlisted`, `JobApplications/NeedsAttention`, `JobApplications/Attended`. To use another prefix set `JOBTRACKER_LABEL_PREFIX` (see [Gmail skills and labels](#gmail-skills-and-labels)).
 
 **7. Reconnect and test.** Restart Claude Code (or run `/mcp`), confirm `gmail` is connected and ask: *"How many emails are in my inbox?"* (`get_gmail_stats`).
 
@@ -181,6 +181,7 @@ Paste the jobs you applied to into `data/todays_jobs.md` (links, or pasted descr
 
 A typical job hunt from zero to offer:
 
+0. **Set up and verify** (once): tell Claude *"set up my job tracker"* (`first-time-setup`). It checks your install, Gmail sign-in and labels, creates missing labels, asks what the daily routine may delete or move, and saves your answers.
 1. **Profile**: tell Claude *"set up my profile"* (`profile-setup`) or *"build my profile from my resume"* (`profile-from-resume`). It writes `data/profile.md` (and optionally `data/cv.md`), both git-ignored and never leaving your machine.
 2. **Collect jobs**: paste links, or descriptions for sites that block scraping, with `add_job` / `add_job_from_text`.
 3. **Score**: *"which jobs should I apply to?"* (`job-fit-scorer`) ranks your `new` jobs against the profile as apply / maybe / skip.
@@ -217,11 +218,13 @@ The skills file mail into labels under one parent label, **`JobApplications`** b
 | `JobApplications/Rejected` | rejections |
 | `JobApplications/Shortlisted` | positive replies (stay in the inbox, starred) |
 | `JobApplications/NeedsAttention` | mail that asks you to do something |
+| `JobApplications/Attended` | you add it to threads you have dealt with; the routine stops reminding you |
 
-Create these labels in Gmail first. To use another prefix set `JOBTRACKER_LABEL_PREFIX` (for example `export JOBTRACKER_LABEL_PREFIX=Jobs2026`) before running Claude Code. Set `JOBTRACKER_USER_HINTS="yourname,yourdomain.com"` (comma separated) so the classifiers can recognise mail you sent yourself.
+The `first-time-setup` skill creates any missing labels for you (or run `python scripts/setup_check.py --apply`). To use another prefix set `JOBTRACKER_LABEL_PREFIX` (for example `export JOBTRACKER_LABEL_PREFIX=Jobs2026`) before running Claude Code. Set `JOBTRACKER_USER_HINTS="yourname,yourdomain.com"` (comma separated) so the classifiers can recognise mail you sent yourself.
 
 | Skill | Purpose |
 |---|---|
+| `first-time-setup` | verify the install and Gmail, create missing labels, ask and save your preferences (re-runnable health check) |
 | `daily-job-routine` | one-shot: add today's jobs, file receipts and rejections, delete job alerts, report what needs you |
 | `gmail-job-inbox-triage` | classify the inbox (needs-you, rejection, confirmation, alert) and file the clear cases |
 | `gmail-file-applications` | file application confirmations |
@@ -241,6 +244,7 @@ Plain scripts, no pytest; each exits 1 on failure:
 ```bash
 .venv/bin/python scripts/test_job_extract.py
 .venv/bin/python scripts/test_applied_date.py
+.venv/bin/python scripts/test_setup_check.py
 .venv/bin/python .claude/skills/gmail-file-rejections/scripts/test_classifier.py
 .venv/bin/python .claude/skills/gmail-file-applications/scripts/test_confirmation.py
 .venv/bin/python .claude/skills/gmail-job-inbox-triage/scripts/test_triage.py
