@@ -1,6 +1,6 @@
 ---
 name: gmail-job-inbox-triage
-description: End-to-end maintenance of the job-related Gmail inbox - delete platform job suggestions (LinkedIn/Stepstone/Glassdoor/XING/jobvector/Instaffo), read company job-agent letters and report the AI roles in them (trashing them only after the user says so), and triage everything else into needs-you, rejections, application confirmations, Easy Apply receipts and doubtful mail, filing the clear ones; only newer mail is read after the first run. Use when the user says "sort/clean my job emails or inbox", "I applied and got replies", "delete job suggestions", or wants new rejections and confirmations handled together. Orchestrates gmail-file-rejections and gmail-file-applications; precision first.
+description: End-to-end maintenance of the job-related Gmail inbox - optionally trash platform job suggestions (LinkedIn/Stepstone/Glassdoor/XING/jobvector/Instaffo) and company job-agent letters, only if the user's saved preferences allow it (see `daily-job-routine` section 0a; ask first if none are saved), report roles from letters, and triage everything else into needs-you, rejections, application confirmations, Easy Apply receipts and doubtful mail, filing the clear ones; only newer mail is read after the first run. Use when the user says "sort/clean my job emails or inbox", "I applied and got replies", "clean up job suggestions", or wants new rejections and confirmations handled together. Orchestrates gmail-file-rejections and gmail-file-applications; precision first.
 ---
 
 # Job inbox maintenance (suggestions + company letters + triage)
@@ -30,6 +30,8 @@ run them in the background and wait with an `until grep -q DONE <log>` loop, not
 **0. Saved run time.** `scripts/mail_state.py show`. After the first full sweep every task reads only mail **newer than its
 last completed run** plus its *pending ids* (mails deliberately left behind), so runs stay cheap. See "Saved run time" below.
 
+**Preferences first.** Trashing and filing mail is the user's choice: read `data/routine-preferences.md` (created by `daily-job-routine`; if it does not exist, ask the questions in its section 0a before moving or trashing anything). A. and B. below run only as those settings say.
+
 **A. Job-suggestion cleanup** (when you add or change a rule, run it once with `--since all`: the saved run time otherwise hides older mail that the new rule would catch) - `scripts/clean_job_suggestions.py --out <scratchpad>/sugg [--since all] ` (dry run), look at the
 "would trash" counts and the "kept" list, then re-run with `--apply`. Trashes job *suggestions* from LinkedIn (job alerts,
 "looking for a new job?", "X is hiring", "apply now to…"), Stepstone, Glassdoor, XING, jobvector, Instaffo, Indeed alerts.
@@ -46,17 +48,16 @@ run-on string, so the automatic extraction glues neighbouring titles: **read the
 titles** (AI/ML/KI/LLM/GenAI/Data Science/Computer Vision; list Data Engineer-type roles as "related"; mark internships,
 working-student roles and study programmes as such). Ignore the letter preamble: it repeats the user's own saved search
 ("Data Scientist, Luxembourg"). Letters carry no job links in the extracted text - tell the user to search the company's career
-site. **Report the AI roles first, then WAIT. Trash the letters only when the user says so, every time** (the user's rule:
-"you trash them after I say"; an earlier one-off yes does not carry over). Only then re-run with `--trash` (undo log
+site. **Report the AI roles first, then WAIT. Trash the letters only when the user's `company_job_letters` preference allows it, or when they say so for this run (`ask-each-run`: an earlier one-off yes does not carry over).** Only then re-run with `--trash` (undo log
 `data/trashed_emails_log/*-companyletters.json`). If one sender keeps returning, mention its unsubscribe link.
 
 **C. Inbox triage** - `scripts/triage_inbox.py --out <scratchpad>/triage` (read-only) classifies recent inbox mail:
 | Bucket | Meaning | Action |
 |---|---|---|
 | `SHORTLISTED` | **positive reply**: interview invitation, "shortlisted / next stage", offer | **Standing rule:** (1) star it, (2) add the label `JobApplications/Shortlisted`, (3) set the tracker job to `interviewing` (`offer` for an offer) when the mail names company **and** title. **The mail stays in the inbox** (do not move it, do not remove Inbox). Use `scripts/mark_shortlisted.py --ids shortlisted.json --apply`. If the mail asks the user to act (book/confirm an appointment, reply, take a test), also add `JobApplications/NeedsAttention`. Report first. |
-| `STALE_PROFILE` | "we will delete your profile/data soon because of inactivity - log in to keep it" (imminent deletion + call to log in; a plain data-retention sentence in a receipt/rejection does NOT count) | **Standing rule: trash** with `scripts/trash_emails.py --ids stale_profile.json --apply` (dry run first; undo log in `data/trashed_emails_log/`) |
+| `STALE_PROFILE` | "we will delete your profile/data soon because of inactivity - log in to keep it" (imminent deletion + call to log in; a plain data-retention sentence in a receipt/rejection does NOT count) | per the `stale_profile_mails` preference: **trash** with `scripts/trash_emails.py --ids stale_profile.json --apply` (dry run first; undo log in `data/trashed_emails_log/`), or `leave` it |
 | `NEEDS_YOU` | about the user's application AND an explicit request (personality test, **automated online assessment / coding challenge such as ELIGO/Harver/Codility, not a positive reply but still an action for the user**, certificate/documents, e-mail confirmation, portal password setup), a real (non-conditional) interview invitation, or an offer/contract | **Report first** with task + deadline. Gets `JobApplications/NeedsAttention`, stays in the inbox, never moved. |
-| `REJECTION` | one decision sentence, no invitation/request in the message (`rejection_classifier`, 0 false positives on 1,600 non-rejection mails) | **file** → `JobApplications/Rejected` (standing instruction), then report each with its deciding sentence |
+| `REJECTION` | one decision sentence, no invitation/request in the message (`rejection_classifier`, 0 false positives on 1,600 non-rejection mails) | **file** → `JobApplications/Rejected` if the `file_rejections` preference is `yes` (otherwise leave it and report), then report each with its deciding sentence |
 | `CONFIRM` | plain acknowledgement, no risk wording (`confirmation_classifier`) | file → `JobApplications` |
 | `CONFIRM_EASY` | LinkedIn Easy Apply receipt (sender linkedin.com only) | file → `JobApplications` + `JobApplications/EasyApply` |
 | `DOUBTFUL` | acknowledgement/rejection wording **and** risk wording, an invitation, a request, a footer or a long text | **read each one** (the triggering context is easy to print); file those you find to be plain receipts or plain rejections, leave the rest |

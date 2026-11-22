@@ -11,7 +11,7 @@ a request to act) out of the inbox can make the user miss it; a rejection that s
 So whenever in doubt: leave it, and list it for the user. Concretely:
 - Only verdict `REJECTION` (high confidence) is filed on its own; `CHECK` mail is never filed unless the user has read it
   and says so for that message.
-- Filing rejections is a standing instruction (confirm once, then it applies to every run): file the high-confidence ones **right away**, then show the list
+- Filing rejections out of the inbox is the user's choice (`file_rejections` in `data/routine-preferences.md`, asked once by `daily-job-routine`; if it is not set, ask before filing anything). When it is `yes`, file the high-confidence ones **right away**, then show the list
   (company, subject, deciding sentence) and the undo log. Do not hold them back waiting for a second yes - that delay is
   what the user complained about ("why did you not file them yet?").
 - Every move writes an undo log (`data/moved_emails_log/*.json`); `move_emails.py --undo <log>` restores the original

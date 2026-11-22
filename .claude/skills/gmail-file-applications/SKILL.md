@@ -16,7 +16,9 @@ description: File job-application confirmation emails ("we received your applica
 - Rejections go to `JobApplications/Rejected` (skill `gmail-file-rejections`), never here.
 - Check it again with `gmail-file-rejections/scripts/move_emails.py --show-convention --to JobApplications/EasyApply`.
 
-## Principle: precision over recall (the user's rule)
+## Principle: precision over recall
+Filing receipts out of the inbox only happens if the `file_receipts` preference in `data/routine-preferences.md` is `yes` (asked once by `daily-job-routine`; if it is not set, ask first).
+
 Filing a mail out of the inbox hides it. A false positive (a rejection, interview invite or request filed as a receipt) is
 dangerous; leaving a receipt in the inbox costs nothing. Real data showed the danger: of mails in the user's Rejected folder
 that *looked* like receipts, several were rejections ("we are unable to offer you this position", "we need a higher German
