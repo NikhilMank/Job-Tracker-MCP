@@ -10,7 +10,7 @@ Nothing here runs on a schedule - only when the user asks.
 
 | # | Job | Reused from |
 |---|-----|-------------|
-| 1 | Add today's applied jobs to the DB | project `CLAUDE.md` -> "Daily workflow" |
+| 1 | Add today's applied jobs to the DB | section 1 below |
 | 2 | File confirmation emails -> `JobApplications` | `gmail-job-inbox-triage` (C, E), `gmail-file-applications` |
 | 3 | File rejections -> `JobApplications/Rejected`, mark the jobs `rejected` | `gmail-file-rejections`, `jobtracker-gmail-sync` |
 | 4 | Handle job-site alerts and company letters **as the user's preferences say** (leave / trash / report) | `gmail-job-inbox-triage` (A, B), section 4 below |
@@ -50,7 +50,27 @@ Gmail itself is optional, and different people want different things done with t
   up-front backup** and say so. Otherwise run `.venv/bin/python scripts/backup_db.py` before adding jobs.
 - Step 3's status updates (marking jobs `rejected`) still take their own backup right before the first write; skip it only if the user says so.
 
-## 1. Update the DB (follow CLAUDE.md "Daily workflow" exactly)
+## 1. Update the DB
+### The daily file
+`data/todays_jobs.md` (git-ignored; an empty template ships with the repo) is where the user pastes the jobs they applied to: **links**
+(one URL per line, optional `#tags`) under "Links to add" and, for Easy Apply jobs without a usable link or sites that block scraping,
+**pasted descriptions** under "Pasted descriptions" (`### Company, Title`, optional URL line, the text, then `---`). On "update the db with
+today's jobs":
+- Run `scripts/backup_db.py` first (skip it, and the whole step, if the file is still the empty template).
+- Add every job as described below; a pasted description is stored with `add_job_from_text(..., status="applied")`, filling only fields the
+  text states (no scraping, never invent a missing field). Moving a job to `applied` also records `Applied: M/D/YYYY` in its notes.
+- Strip page chrome from pastes: StepStone "match" widgets (they can contain the user's CV name), LinkedIn "Application submitted" lines,
+  recruiter and poster names.
+- **Duplicates:** an exact URL/text match is rejected with the existing job's status and age. Added less than a day ago: an accidental
+  double paste, skip it. Older: a re-application, retry with `allow_duplicate=true` (stored as `url#re-<date>-<id>`). Never skip silently:
+  list every duplicate and re-application in the report. A same-company, similar-title job with a different link is not blocked; just
+  mention the earlier entry. Without a URL, `add_job_from_text` keys the job by `manual:<hash>` (company + title + text).
+- When done, verify every new id exists, then **clear `data/todays_jobs.md`**: delete everything under the template headings (links, pasted
+  descriptions and any `## Done` log) so it is the empty template again. The database holds the full text, so keep no raw copies or Done
+  list in the file; the added / duplicate / failed summary goes in the chat report.
+- Confirmation emails are filed afterwards only as the user's preferences allow (`gmail_enabled` and `file_receipts`, section 0a).
+
+### Adding the jobs
 - Links: `add_job` then `update_job(status="applied")`. Pasted blocks: `add_job_from_text(..., status="applied")`, filling only what the
   text states; strip page chrome and recruiter names. `allow_duplicate=true` only for a re-application (existing entry older than a day).
 - Before adding a pasted block, `search_jobs` for the same company + title added **less than a day ago**: that is an accidental double
@@ -61,10 +81,10 @@ Gmail itself is optional, and different people want different things done with t
 - **Log every scraper problem, not only Firecrawl fallbacks**: after the links are added, compare each
   stored row with the page (`get_job`) and append one line to `data/scraper_failures.md` for every link where `add_job` errored, stored a blank or
   wrong title/company/location, stored a generic title ("JobPortal", "Jobs"), or stored a shell/cookie/navigation description - whether or not
-  Firecrawl was used and whether you fixed it with `update_job`. Format: `date | url | what was blank/wrong | what Firecrawl returned or "not needed, filled from page text" | suspected fix` (name where the page states the value). Do this in the same run, before the report; the log is how `JOB_SCHEMA` / `_scrape_job` get improved. Count clean scrapes vs problems in the report (step 5, DB update).
+  Firecrawl was used and whether you fixed it with `update_job`. Format: `date | url | what was blank/wrong | what Firecrawl returned or "not needed, filled from page text" | suspected fix` (name where the page states the value). Do this in the same run, before the report; the log is how `JOB_SCHEMA` / `_scrape_job` get improved (review it when changing the scraper). Firecrawl is optional: without that MCP, ask for a paste and use `add_job_from_text`. Count clean scrapes vs problems in the report (step 5, DB update).
 - **A job description is non-negotiable.** Every `add_job` / `add_job_from_text` reply states `description N chars`. A line `!! DESCRIPTION PROBLEM` (or `description_ok: false`, or a `description ...` entry in `warnings`) means the JD is missing, short, still has cookie/footer/navigation text, comes from an aggregator, or a paste still has LinkedIn/StepStone UI lines. Tell the user about EVERY such case at the top of the report, never only in the scraper log, and do not finish the run with a job that has no usable JD: find the real text (employer page first, then `firecrawl_scrape`, else ask for a paste), fix it with `update_job(description=...)`, and say which source it came from. Also check the stored text yourself with `get_job` for jobs from sites with known trouble. Jobs without any JD found are listed by id as "NO JOB DESCRIPTION".
 - `add_job` now ends its reply with `[check: ...]` when its own quality check found something (company/location blank, cookie/footer text left in the description): treat each as a scraper problem for the log above.
-- Verify every new id exists and has a title and company, then reset `data/todays_jobs.md` to the empty template (CLAUDE.md).
+- Verify every new id exists and has a title and company, then reset `data/todays_jobs.md` to the empty template (see "The daily file").
 - Report added / duplicate / re-application / failed.
 
 ## 2 + 3. Triage the inbox, file receipts and rejections
