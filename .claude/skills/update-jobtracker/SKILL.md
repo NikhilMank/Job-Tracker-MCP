@@ -6,7 +6,7 @@ description: Safely update this project to the latest version from GitHub withou
 # Update JobTracker
 
 Brings a clone of the repo up to date and keeps everything personal. It never discards anything: no `git reset --hard`, no
-`git checkout -- .`, no `git clean`, no force push, no deleting files. It asks before the pull and never pushes.
+`git checkout -- .` (the single-file step in step 5 is the one exception), no `git clean`, no force push, no deleting files. It asks before the pull and never pushes.
 
 ## What an update cannot touch
 These are git-ignored, so `git pull` never overwrites them: `jobtracker.db`, `backups/`, everything in `data/` (profile, CV, routine

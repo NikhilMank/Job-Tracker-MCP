@@ -181,6 +181,7 @@ python scripts/setup_check.py           # health check; also lists any new, unan
 
 Then restart Claude Code (or run `/mcp`) so the servers load the new code, and say *"check my setup"* to answer any new preference questions.
 
+- **Cloned before the daily file became private?** Older clones tracked `data/todays_jobs.md`, so the first update needs a small extra step: `cp data/todays_jobs.md data/todays_jobs.keep`, then `git checkout -- data/todays_jobs.md`, then the usual stash / `git pull --ff-only` / stash pop, then `mv data/todays_jobs.keep data/todays_jobs.md`. Easier: ask Claude to update; the `update-jobtracker` skill does exactly this.
 - **You edited tracked files** (for example `triage_rules.py`)? `git pull` may refuse. Run `git stash`, then `git pull --ff-only`, then `git stash pop`, and fix any conflict it reports (Claude can help). Do **not** use `git reset --hard`, `git checkout .` or `git clean`: those throw your edits away.
 - **You downloaded a ZIP** instead of cloning? Updating needs git. Clone the repo into a new folder, then copy `jobtracker.db`, `backups/`, `data/`, `gmail_credentials.json`, `.gmail-token.json` and `.claude/settings.local.json` from the old folder into the new one.
 - **You forked the repo?** Add this repository once as `upstream` (`git remote add upstream https://github.com/NikhilMank/Job-Tracker-MCP.git`), then `git fetch upstream` and `git merge upstream/main`.
