@@ -19,7 +19,7 @@ Works for any field and market: the criteria come from the profile, not from thi
 3. For each job, `get_job` to read the full description. **If the description is missing or too short to judge,
    do not score it** (rule of thumb: under about 250 characters, or no responsibilities or requirements you
    can match): list it under "Needs a description" (the tracker treats a missing JD as a problem to
-   fix, see project CLAUDE.md).
+   fix with `update_job(description=...)` once the real text is found).
 4. Score each job 0-100 using these weighted criteria, only counting criteria the profile defines:
    | Criterion | Weight | Judge from |
    |---|---|---|

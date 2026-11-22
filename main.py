@@ -654,7 +654,7 @@ This tool uses Crawl4AI to extract structured data (title, company, location, sa
 It works with Indeed, Greenhouse, Lever and most company career pages, and falls back to markdown extraction for unknown sites.
 stepstone.de and linkedin.com are blocked by robots.txt (HTTP 403) and will fail: do NOT retry them with another scraper; ask the user to paste the description and use add_job_from_text.
 The reply states the description length; a line starting '!! DESCRIPTION PROBLEM' means the stored job description is missing, short, still has page chrome, or comes from an aggregator: tell the user and fix it in the same run. A job description is non-negotiable.
-Always try this tool first for every job posting URL. Firecrawl/WebFetch are only a fallback after this tool fails or returns blank fields, and every fallback must be logged in data/scraper_failures.md (see CLAUDE.md).
+Always try this tool first for every job posting URL. Firecrawl/WebFetch are only a fallback after this tool fails or returns blank fields, and every fallback must be logged in data/scraper_failures.md (see the daily-job-routine skill).
 
 Parameters:
 - url: The absolute http(s) URL of the job posting

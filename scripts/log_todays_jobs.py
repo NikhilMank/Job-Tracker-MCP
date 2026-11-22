@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Log the jobs the user applied to today (the "Daily workflow" in CLAUDE.md), without the MCP client.
+"""Log the jobs the user applied to today (the daily file workflow in the `daily-job-routine` skill), without the MCP client.
 
 Why a script: the running MCP server may be older than main.py (new tools such as add_job_from_text only appear after Claude Code
 restarts). This calls the very same tool functions from main.py in-process, so duplicate protection, URL validation, robots.txt
@@ -14,7 +14,7 @@ links : every URL line under "## Links to add" (optional #tags after the URL): a
         Already tracked <1 day ago = accidental double paste -> skipped; older = re-application -> allow_duplicate=True. Scrape failures
         (e.g. robots.txt 403 on stepstone/linkedin) are reported, never invented.
 texts : SPEC.json = [{"title","description","company","location","salary","url","notes","tags"}, ...] -> add_job_from_text(status='applied').
-        Only fill fields the pasted text states. Strip page chrome / recruiter names first (see CLAUDE.md).
+        Only fill fields the pasted text states. Strip page chrome / recruiter names first (see the daily-job-routine skill).
 clear : checks that every job id in the report(s) is in the database, then rewrites data/todays_jobs.md as the empty template
         (everything under the template headings removed, incl. any Done list).
 """

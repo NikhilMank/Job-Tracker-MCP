@@ -45,7 +45,7 @@ def ts(*dates):
 
 def backup_database(db_path: str) -> str:
     """Back up via the project's scripts/backup_db.py (one dated copy per day in backups/, prunes copies older than 30 days).
-    Never creates ad-hoc jobtracker.db.bak-* files in the project root (see CLAUDE.md)."""
+    Never creates ad-hoc jobtracker.db.bak-* files in the project root (see scripts/README.md)."""
     import subprocess, sys as _sys
     root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", ".."))
     if os.path.abspath(db_path) == os.path.join(root, "jobtracker.db"):
