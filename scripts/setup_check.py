@@ -185,7 +185,7 @@ def check_environment(apply):
     report("OK" if v >= (3, 12) else "FAIL", "Python >= 3.12", f"{v.major}.{v.minor}.{v.micro}")
     in_venv = sys.prefix != sys.base_prefix
     venv_py = os.path.exists(os.path.join(ROOT, ".venv", "bin", "python"))
-    report("OK" if venv_py else "FAIL", ".venv/bin/python exists", "" if venv_py else "create it: python3.12 -m venv .venv && pip install -r requirements.txt")
+    report("OK" if venv_py else "FAIL", ".venv/bin/python exists", "" if venv_py else "create it: python3 -m venv .venv (Python 3.12+) && pip install -r requirements.txt")
     if not in_venv:
         report("WARN", "running inside the project venv", "run this script with .venv/bin/python")
     try:

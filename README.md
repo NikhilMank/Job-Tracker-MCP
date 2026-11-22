@@ -12,7 +12,7 @@ Everything runs on your machine; your data stays in `jobtracker.db` and your own
 
 ```bash
 git clone https://github.com/NikhilMank/Job-Tracker-MCP.git && cd Job-Tracker-MCP
-python3.12 -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate     # needs Python 3.12 or newer (check: python3 --version)
 pip install -r requirements.txt && crawl4ai-setup
 claude            # approve the project servers, then check /mcp
 ```
@@ -37,7 +37,7 @@ Two parts: **A. the job tracker** (about 10 minutes, everything you need to save
 | You need | Check with | Notes |
 |---|---|---|
 | [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) | `claude --version` | sign in with your own account |
-| Python **3.12 or newer** | `python3 --version` | macOS ships an older one: `brew install python@3.12`. Ubuntu/Debian: `sudo apt install python3.12 python3.12-venv` |
+| Python **3.12 or newer** | `python3 --version` | Not installed or older? Download the latest from [python.org/downloads](https://www.python.org/downloads/), or use your package manager (macOS: `brew install python`; Ubuntu/Debian: `sudo apt install python3 python3-venv`) |
 | git | `git --version` | |
 | Windows | use **WSL2** (Ubuntu) and run everything inside it | the config uses `.venv/bin/python`, which does not exist on native Windows |
 
@@ -53,7 +53,7 @@ cd Job-Tracker-MCP
 **2. Create the Python environment and install**
 
 ```bash
-python3.12 -m venv .venv          # use python3 if that is already 3.12+
+python3 -m venv .venv             # Python 3.12 or newer (if `python3` is older, use the newer one, e.g. python3.13)
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
@@ -207,6 +207,44 @@ search_jobs("python remote")
 ### Daily workflow
 
 Paste the jobs you applied to into `data/todays_jobs.md` (created from `data/todays_jobs.template.md` on first use, and git-ignored; links, or pasted descriptions for Easy Apply jobs) and tell Claude *"update the db with today's jobs"*. The `daily-job-routine` skill adds them, files the confirmation emails and handles rejections.
+
+#### What to paste: a link or the description?
+
+Use a **link** whenever the job page is public and shows the full text. The tracker opens it, reads the title, company, location, salary and description itself, and stores it. Use the **description** when a link would not work:
+
+| Situation | Paste |
+|---|---|
+| Company career page, Greenhouse, Lever, Personio, Workable and similar public pages | the **link** under `## Links to add` |
+| **LinkedIn** or **StepStone** (their robots.txt blocks automatic reading, so a link fails) | the **description text** under `## Pasted descriptions` |
+| LinkedIn **Easy Apply** (no separate company page) | the **description text** |
+| Page needs a login, or only shows a menu or job list (the tracker reports "nothing to store") | the **description text** |
+| A link was tried and came back with missing company, title or description | the **description text** (Claude asks you for it) |
+
+**Links:** one per line, optional tags after the link.
+
+```
+https://careers.example.com/jobs/12345  #python #remote
+https://jobs.example.org/backend-engineer
+```
+
+**Descriptions:** one block per job, in this shape, and end every block with a line containing only `---`.
+
+```
+### Backend Engineer
+Acme GmbH - Berlin, Germany
+https://www.linkedin.com/jobs/view/123456789
+Full text of the job posting goes here, copied from the page: the role,
+the tasks, the requirements and the benefits. Salary or location lines too if the page has them.
+---
+```
+
+- First line: `### ` plus the job title.
+- Second line: the company, then ` - ` and the address or city if you know it.
+- Third line (optional): the posting link, if you have one. It is used to detect duplicates, so add it when you can.
+- Then the posting text. Copy the whole description: a short or partial text is flagged, because skills such as the fit scorer and CV tailoring depend on it.
+- You do not need to clean the paste. Claude removes page clutter (match widgets, "application submitted" lines, recruiter names). Claude only fills fields the text states and never invents missing ones.
+
+If you already applied to a job earlier, pasting it again is fine: Claude lists duplicates in its report, and treats it as a new application when the earlier one is more than a day old.
 
 ## Getting started
 
