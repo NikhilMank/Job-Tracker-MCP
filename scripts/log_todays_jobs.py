@@ -16,16 +16,30 @@ links : every URL line under "## Links to add" (optional #tags after the URL): a
 texts : SPEC.json = [{"title","description","company","location","salary","url","notes","tags"}, ...] -> add_job_from_text(status='applied').
         Only fill fields the pasted text states. Strip page chrome / recruiter names first (see the daily-job-routine skill).
 clear : checks that every job id in the report(s) is in the database, then rewrites data/todays_jobs.md as the empty template
-        (everything under the template headings removed, incl. any Done list).
+        (everything under the template headings removed, incl. any Done list). The file is git-ignored and created
+        from data/todays_jobs.template.md when it does not exist yet.
 """
-import argparse, asyncio, json, os, re, sqlite3, sys, time
+import argparse, asyncio, json, os, re, shutil, sqlite3, sys, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 DEFAULT_FILE = os.path.join(ROOT, "data", "todays_jobs.md")
+TEMPLATE_FILE = os.path.join(ROOT, "data", "todays_jobs.template.md")  # tracked; the daily file itself is git-ignored
+
+
+def ensure_file(path):
+    """The daily file is private and git-ignored, so a fresh clone does not have it: create it from the template."""
+    if not os.path.exists(path):
+        if not os.path.exists(TEMPLATE_FILE):
+            sys.exit(f"{os.path.relpath(path, ROOT)} is missing and so is the template {os.path.relpath(TEMPLATE_FILE, ROOT)}")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        shutil.copyfile(TEMPLATE_FILE, path)
+        print(f"created {os.path.relpath(path, ROOT)} from the template: paste today's jobs into it", flush=True)
+
 
 
 def parse_links(path):
+    ensure_file(path)
     text = open(path, encoding="utf-8").read()
     start = text.index("## Links to add")
     end = text.index("## Pasted descriptions") if "## Pasted descriptions" in text else len(text)
@@ -108,6 +122,7 @@ def clear(args):
     missing = [i for i in ids if i not in have]
     if missing:
         sys.exit(f"NOT clearing: {len(missing)} logged ids are missing from the database: {missing}")
+    ensure_file(args.file)
     text = open(args.file, encoding="utf-8").read()
     head = text[:text.index("## Links to add")]
     template = (head + "## Links to add\n\nPaste one job URL per line. Optional tags after the URL, like `#python #remote`.\n\n"

@@ -8,7 +8,7 @@ __pycache__/
 *.db
 backups/
 data/*
-!data/todays_jobs.md
+!data/todays_jobs.template.md
 .crawl4ai-cache/
 scripts/fixtures/
 
